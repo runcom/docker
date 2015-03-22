@@ -2530,7 +2530,10 @@ func (cli *DockerCli) CmdRun(args ...string) error {
 	if *flAutoRemove {
 		// Autoremove: wait for the container to finish, retrieve
 		// the exit code and remove the container
-		if _, _, err := readBody(cli.call("POST", "/containers/"+createResponse.ID+"/wait", nil, false)); err != nil {
+		if _, _, err := readBody(cli.call("POST", "/containers/"+createResponse.ID+"/wait?ar=1", nil, false)); err != nil {
+			if _, _, err := readBody(cli.call("DELETE", "/containers/"+createResponse.ID+"?v=1", nil, false)); err != nil {
+				return err
+			}
 			return err
 		}
 		if _, status, err = getExitCode(cli, createResponse.ID); err != nil {

@@ -879,6 +879,7 @@ func postContainersWait(eng *engine.Engine, version version.Version, w http.Resp
 		stdoutBuffer = bytes.NewBuffer(nil)
 		job          = eng.Job("wait", vars["name"])
 	)
+	job.Setenv("autoremove", r.Form.Get("ar"))
 	job.Stdout.Add(stdoutBuffer)
 	if err := job.Run(); err != nil {
 		return err
