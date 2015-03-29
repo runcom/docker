@@ -14,6 +14,7 @@ import (
 	flag "github.com/docker/docker/pkg/mflag"
 	"github.com/docker/docker/pkg/parsers/filters"
 	"github.com/docker/docker/pkg/stringid"
+	"github.com/docker/docker/pkg/stringutils"
 	"github.com/docker/docker/pkg/units"
 	"github.com/docker/docker/utils"
 )
@@ -134,7 +135,7 @@ func (cli *DockerCli) CmdPs(args ...string) error {
 		)
 
 		if !*noTrunc {
-			outCommand = utils.Trunc(outCommand, 20)
+			outCommand = stringutils.Truncate(outCommand, 20)
 
 			// only display the default name for the container with notrunc is passed
 			for _, name := range outNames {

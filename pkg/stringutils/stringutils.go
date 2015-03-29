@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"io"
 	mathrand "math/rand"
+	"strings"
 	"time"
 )
 
@@ -40,4 +41,23 @@ func GenerateRandomAsciiString(n int) string {
 		res[i] = chars[mathrand.Intn(len(chars))]
 	}
 	return string(res)
+}
+
+// Truncate a string to maxlen
+func Truncate(s string, maxlen int) string {
+	if len(s) <= maxlen {
+		return s
+	}
+	return s[:maxlen]
+}
+
+// Test wheather a string is contained in a slice of strings or not.
+// Comparison is case insensitive
+func InSlice(slice []string, s string) bool {
+	for _, ss := range slice {
+		if strings.ToLower(s) == strings.ToLower(ss) {
+			return true
+		}
+	}
+	return false
 }

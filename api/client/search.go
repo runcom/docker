@@ -9,6 +9,7 @@ import (
 	"github.com/docker/docker/engine"
 	flag "github.com/docker/docker/pkg/mflag"
 	"github.com/docker/docker/pkg/parsers"
+	"github.com/docker/docker/pkg/stringutils"
 	"github.com/docker/docker/registry"
 	"github.com/docker/docker/utils"
 )
@@ -58,7 +59,7 @@ func (cli *DockerCli) CmdSearch(args ...string) error {
 		desc := strings.Replace(out.Get("description"), "\n", " ", -1)
 		desc = strings.Replace(desc, "\r", " ", -1)
 		if !*noTrunc && len(desc) > 45 {
-			desc = utils.Trunc(desc, 42) + "..."
+			desc = stringutils.Truncate(desc, 42) + "..."
 		}
 		fmt.Fprintf(w, "%s\t%s\t%d\t", out.Get("name"), desc, out.GetInt("star_count"))
 		if out.GetBool("is_official") {

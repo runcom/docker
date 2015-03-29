@@ -47,13 +47,6 @@ func Download(url string) (resp *http.Response, err error) {
 	return resp, nil
 }
 
-func Trunc(s string, maxlen int) string {
-	if len(s) <= maxlen {
-		return s
-	}
-	return s[:maxlen]
-}
-
 // Figure out the absolute path of our own binary (if it's still around).
 func SelfPath() string {
 	path, err := exec.LookPath(os.Args[0])
@@ -474,15 +467,6 @@ func ValidateContextDirectory(srcPath string, excludes []string) error {
 		}
 		return nil
 	})
-}
-
-func StringsContainsNoCase(slice []string, s string) bool {
-	for _, ss := range slice {
-		if strings.ToLower(s) == strings.ToLower(ss) {
-			return true
-		}
-	}
-	return false
 }
 
 // Reads a .dockerignore file and returns the list of file patterns

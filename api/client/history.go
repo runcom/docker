@@ -8,6 +8,7 @@ import (
 	"github.com/docker/docker/engine"
 	flag "github.com/docker/docker/pkg/mflag"
 	"github.com/docker/docker/pkg/stringid"
+	"github.com/docker/docker/pkg/stringutils"
 	"github.com/docker/docker/pkg/units"
 	"github.com/docker/docker/utils"
 )
@@ -52,7 +53,7 @@ func (cli *DockerCli) CmdHistory(args ...string) error {
 			if *noTrunc {
 				fmt.Fprintf(w, "%s\t", out.Get("CreatedBy"))
 			} else {
-				fmt.Fprintf(w, "%s\t", utils.Trunc(out.Get("CreatedBy"), 45))
+				fmt.Fprintf(w, "%s\t", stringutils.Truncate(out.Get("CreatedBy"), 45))
 			}
 			fmt.Fprintf(w, "%s\n", units.HumanSize(float64(out.GetInt64("Size"))))
 		} else {
