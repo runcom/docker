@@ -20,6 +20,11 @@ func (n NetworkMode) IsHost() bool {
 	return n == "host"
 }
 
+func (n NetworkMode) IsNamespace() bool {
+	parts := strings.SplitN(string(n), ":", 2)
+	return len(parts) > 1 && parts[0] == "ns"
+}
+
 func (n NetworkMode) IsContainer() bool {
 	parts := strings.SplitN(string(n), ":", 2)
 	return len(parts) > 1 && parts[0] == "container"
@@ -40,6 +45,11 @@ func (n IpcMode) IsHost() bool {
 	return n == "host"
 }
 
+func (n IpcMode) IsNamespace() bool {
+	parts := strings.SplitN(string(n), ":", 2)
+	return len(parts) > 1 && parts[0] == "ns"
+}
+
 func (n IpcMode) IsContainer() bool {
 	parts := strings.SplitN(string(n), ":", 2)
 	return len(parts) > 1 && parts[0] == "container"
@@ -50,6 +60,10 @@ func (n IpcMode) Valid() bool {
 	switch mode := parts[0]; mode {
 	case "", "host":
 	case "container":
+		if len(parts) != 2 || parts[1] == "" {
+			return false
+		}
+	case "ns":
 		if len(parts) != 2 || parts[1] == "" {
 			return false
 		}
@@ -78,10 +92,19 @@ func (n PidMode) IsHost() bool {
 	return n == "host"
 }
 
+func (n PidMode) IsNamespace() bool {
+	parts := strings.SplitN(string(n), ":", 2)
+	return len(parts) > 1 && parts[0] == "ns"
+}
+
 func (n PidMode) Valid() bool {
 	parts := strings.Split(string(n), ":")
 	switch mode := parts[0]; mode {
 	case "", "host":
+	case "ns":
+		if len(parts) != 2 || parts[1] == "" {
+			return false
+		}
 	default:
 		return false
 	}

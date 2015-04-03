@@ -286,6 +286,8 @@ func populateCommand(c *Container, env []string) error {
 			return err
 		}
 		en.ContainerID = nc.ID
+	case "ns":
+		// do something
 	default:
 		return fmt.Errorf("invalid network mode: %s", c.hostConfig.NetworkMode)
 	}
@@ -1285,6 +1287,9 @@ func (container *Container) initializeNetworking() error {
 		container.Config.Domainname = nc.Config.Domainname
 		return nil
 	}
+	//if container.hostConfig.NetworkMode.IsNamespace() {
+	//container.Config.
+	//}
 	if container.daemon.config.DisableNetwork {
 		container.Config.NetworkDisabled = true
 		return container.buildHostnameAndHostsFiles("127.0.1.1")

@@ -151,6 +151,7 @@ This value should always larger than **-m**, so you should alway use this with *
                                'bridge': creates a new network stack for the container on the docker bridge
                                'none': no networking for this container
                                'container:<name|id>': reuses another container network stack
+                               'ns:<path>': reuses another process network stack. Path to an existing network namespace file. If the path is not absolute, the path is considered to be relative to the namespace path of the init process.
                                'host': use the host network stack inside the container.  Note: the host mode gives the container full access to local system services such as D-bus and is therefore considered insecure.
 
 **-P**, **--publish-all**=*true*|*false*
