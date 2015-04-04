@@ -55,7 +55,7 @@ func (daemon *Daemon) ContainerKill(job *engine.Job) error {
 		if err := container.KillSig(int(sig)); err != nil {
 			return fmt.Errorf("Cannot kill container %s: %s", name, err)
 		}
-		// FIXME: Add event for signals
+		container.LogEvent(fmt.Sprint("kill (%d)", int(sig))
 	}
 	return nil
 }
