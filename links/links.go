@@ -68,7 +68,7 @@ func (l *Link) ToEnv() []string {
 	alias := strings.Replace(strings.ToUpper(l.Alias()), "-", "_", -1)
 
 	if p := l.getDefaultPort(); p != nil {
-		env = append(env, fmt.Sprintf("%s_PORT=%s://%s:%s", alias, p.Proto(), l.ChildIP, p.Port()))
+		env = append(env, fmt.Sprintf("DOCKER_%s_PORT=%s://%s:%s", alias, p.Proto(), l.ChildIP, p.Port()))
 	}
 
 	//sort the ports so that we can bulk the continuous ports together
@@ -82,14 +82,14 @@ func (l *Link) ToEnv() []string {
 		p := l.Ports[i]
 		j := nextContiguous(l.Ports, p.Int(), i)
 		if j > i+1 {
-			env = append(env, fmt.Sprintf("%s_PORT_%s_%s_START=%s://%s:%s", alias, p.Port(), strings.ToUpper(p.Proto()), p.Proto(), l.ChildIP, p.Port()))
-			env = append(env, fmt.Sprintf("%s_PORT_%s_%s_ADDR=%s", alias, p.Port(), strings.ToUpper(p.Proto()), l.ChildIP))
-			env = append(env, fmt.Sprintf("%s_PORT_%s_%s_PROTO=%s", alias, p.Port(), strings.ToUpper(p.Proto()), p.Proto()))
-			env = append(env, fmt.Sprintf("%s_PORT_%s_%s_PORT_START=%s", alias, p.Port(), strings.ToUpper(p.Proto()), p.Port()))
+			env = append(env, fmt.Sprintf("DOCKER_%s_PORT_%s_%s_START=%s://%s:%s", alias, p.Port(), strings.ToUpper(p.Proto()), p.Proto(), l.ChildIP, p.Port()))
+			env = append(env, fmt.Sprintf("DOCKER_%s_PORT_%s_%s_ADDR=%s", alias, p.Port(), strings.ToUpper(p.Proto()), l.ChildIP))
+			env = append(env, fmt.Sprintf("DOCKER_%s_PORT_%s_%s_PROTO=%s", alias, p.Port(), strings.ToUpper(p.Proto()), p.Proto()))
+			env = append(env, fmt.Sprintf("DOCKER_%s_PORT_%s_%s_PORT_START=%s", alias, p.Port(), strings.ToUpper(p.Proto()), p.Port()))
 
 			q := l.Ports[j]
-			env = append(env, fmt.Sprintf("%s_PORT_%s_%s_END=%s://%s:%s", alias, p.Port(), strings.ToUpper(q.Proto()), q.Proto(), l.ChildIP, q.Port()))
-			env = append(env, fmt.Sprintf("%s_PORT_%s_%s_PORT_END=%s", alias, p.Port(), strings.ToUpper(q.Proto()), q.Port()))
+			env = append(env, fmt.Sprintf("DOCKER_%s_PORT_%s_%s_END=%s://%s:%s", alias, p.Port(), strings.ToUpper(q.Proto()), q.Proto(), l.ChildIP, q.Port()))
+			env = append(env, fmt.Sprintf("DOCKER_%s_PORT_%s_%s_PORT_END=%s", alias, p.Port(), strings.ToUpper(q.Proto()), q.Port()))
 
 			i = j + 1
 			continue
@@ -98,14 +98,14 @@ func (l *Link) ToEnv() []string {
 		}
 	}
 	for _, p := range l.Ports {
-		env = append(env, fmt.Sprintf("%s_PORT_%s_%s=%s://%s:%s", alias, p.Port(), strings.ToUpper(p.Proto()), p.Proto(), l.ChildIP, p.Port()))
-		env = append(env, fmt.Sprintf("%s_PORT_%s_%s_ADDR=%s", alias, p.Port(), strings.ToUpper(p.Proto()), l.ChildIP))
-		env = append(env, fmt.Sprintf("%s_PORT_%s_%s_PORT=%s", alias, p.Port(), strings.ToUpper(p.Proto()), p.Port()))
-		env = append(env, fmt.Sprintf("%s_PORT_%s_%s_PROTO=%s", alias, p.Port(), strings.ToUpper(p.Proto()), p.Proto()))
+		env = append(env, fmt.Sprintf("DOCKER_%s_PORT_%s_%s=%s://%s:%s", alias, p.Port(), strings.ToUpper(p.Proto()), p.Proto(), l.ChildIP, p.Port()))
+		env = append(env, fmt.Sprintf("DOCKER_%s_PORT_%s_%s_ADDR=%s", alias, p.Port(), strings.ToUpper(p.Proto()), l.ChildIP))
+		env = append(env, fmt.Sprintf("DOCKER_%s_PORT_%s_%s_PORT=%s", alias, p.Port(), strings.ToUpper(p.Proto()), p.Port()))
+		env = append(env, fmt.Sprintf("DOCKER_%s_PORT_%s_%s_PROTO=%s", alias, p.Port(), strings.ToUpper(p.Proto()), p.Proto()))
 	}
 
 	// Load the linked container's name into the environment
-	env = append(env, fmt.Sprintf("%s_NAME=%s", alias, l.Name))
+	env = append(env, fmt.Sprintf("DOCKER_%s_NAME=%s", alias, l.Name))
 
 	if l.ChildEnvironment != nil {
 		for _, v := range l.ChildEnvironment {
@@ -117,7 +117,7 @@ func (l *Link) ToEnv() []string {
 			if parts[0] == "HOME" || parts[0] == "PATH" {
 				continue
 			}
-			env = append(env, fmt.Sprintf("%s_ENV_%s=%s", alias, parts[0], parts[1]))
+			env = append(env, fmt.Sprintf("DOCKER_%s_ENV_%s=%s", alias, parts[0], parts[1]))
 		}
 	}
 	return env
