@@ -557,32 +557,39 @@ func getContainersLogs(eng *engine.Engine, version version.Version, w http.Respo
 		return fmt.Errorf("Missing parameter")
 	}
 
+	//logsConfig := &daemon.ContainerLogsConfig{
+	//Stdout:     stdout,
+	//Stderr:     stderr,
+	//Follow:     toBool(r.Form.Get("follow")),
+	//Timestamps: toBool(r.Form.Get("timestamps")),
+	//Tail:       r.Form.Get("tail"),
+	//}
+
 	var (
-		inspectJob = eng.Job("container_inspect", vars["name"])
-		logsJob    = eng.Job("logs", vars["name"])
-		c, err     = inspectJob.Stdout.AddEnv()
+		logsJob = eng.Job("logs", vars["name"])
 	)
-	if err != nil {
-		return err
-	}
 	logsJob.Setenv("follow", r.Form.Get("follow"))
 	logsJob.Setenv("tail", r.Form.Get("tail"))
 	logsJob.Setenv("stdout", r.Form.Get("stdout"))
 	logsJob.Setenv("stderr", r.Form.Get("stderr"))
 	logsJob.Setenv("timestamps", r.Form.Get("timestamps"))
 	// Validate args here, because we can't return not StatusOK after job.Run() call
+	////FIXME: new version -> stdout, stderr := toBool(r.Form.Get("stdout")), toBool(r.Form.Get("stderr"))
 	stdout, stderr := logsJob.GetenvBool("stdout"), logsJob.GetenvBool("stderr")
 	if !(stdout || stderr) {
 		return fmt.Errorf("Bad parameters: you must choose at least one stream")
 	}
-	if err = inspectJob.Run(); err != nil {
+
+	d := getDaemon(eng)
+	cont, err := d.Get(vars["name"])
+	if err != nil {
 		return err
 	}
 
 	var outStream, errStream io.Writer
 	outStream = utils.NewWriteFlusher(w)
 
-	if c.GetSubEnv("Config") != nil && !c.GetSubEnv("Config").GetBool("Tty") && version.GreaterThanOrEqualTo("1.6") {
+	if cont.Config != nil && !cont.Config.Tty && version.GreaterThanOrEqualTo("1.6") {
 		errStream = stdcopy.NewStdWriter(outStream, stdcopy.Stderr)
 		outStream = stdcopy.NewStdWriter(outStream, stdcopy.Stdout)
 	} else {
@@ -1139,12 +1146,25 @@ func getContainersByName(eng *engine.Engine, version version.Version, w http.Res
 	if vars == nil {
 		return fmt.Errorf("Missing parameter")
 	}
-	var job = eng.Job("container_inspect", vars["name"])
+
+	name := vars["name"]
+	d := getDaemon(eng)
+
 	if version.LessThan("1.12") {
-		job.SetenvBool("raw", true)
+		contJSON, err := d.ContainerInspectRaw(name)
+		if err != nil {
+			return err
+		}
+		writeJSON(w, http.StatusOK, contJSON)
+	} else {
+		contJSON, err := d.ContainerInspect(name)
+		if err != nil {
+			return err
+		}
+		writeJSON(w, http.StatusOK, contJSON)
 	}
-	streamJSON(job, w, false)
-	return job.Run()
+
+	return nil
 }
 
 func getExecByID(eng *engine.Engine, version version.Version, w http.ResponseWriter, r *http.Request, vars map[string]string) error {

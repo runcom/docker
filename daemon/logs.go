@@ -16,6 +16,11 @@ import (
 	"github.com/docker/docker/pkg/timeutils"
 )
 
+//type ContainerLogsConfig struct {
+//Stdout, Stderr, Follow, Timestamps bool
+//Tail                               string
+//}
+
 func (daemon *Daemon) ContainerLogs(job *engine.Job) error {
 	if len(job.Args) != 1 {
 		return fmt.Errorf("Usage: %s CONTAINER\n", job.Name)

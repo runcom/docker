@@ -3,59 +3,90 @@ package daemon
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
+	"github.com/docker/docker/daemon/network"
 	"github.com/docker/docker/engine"
 	"github.com/docker/docker/runconfig"
 )
 
-func (daemon *Daemon) ContainerInspect(job *engine.Job) error {
-	if len(job.Args) != 1 {
-		return fmt.Errorf("usage: %s NAME", job.Name)
-	}
-	name := job.Args[0]
+// needed for backwards compatibility with api < 1.12
+type ContainerJSONRaw struct {
+	*Container
+	HostConfig *runconfig.HostConfig
+}
+
+type ContainerJSON struct {
+	Id              string
+	Created         time.Time
+	Path            string
+	Args            []string
+	Config          *runconfig.Config
+	State           *State
+	Image           string
+	NetworkSettings *network.Settings
+	ResolvConfPath  string
+	HostnamePath    string
+	HostsPath       string
+	LogPath         string
+	Name            string
+	RestartCount    int
+	Driver          string
+	ExecDriver      string
+	MountLabel      string
+	ProcessLabel    string
+	Volumes         map[string]string
+	VolumesRW       map[string]bool
+	AppArmorProfile string
+	ExecIDs         []string
+	HostConfig      *runconfig.HostConfig
+}
+
+func (daemon *Daemon) ContainerInspectRaw(name string) (*ContainerJSONRaw, error) {
 	container, err := daemon.Get(name)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	container.Lock()
 	defer container.Unlock()
-	if job.GetenvBool("raw") {
-		b, err := json.Marshal(&struct {
-			*Container
-			HostConfig *runconfig.HostConfig
-		}{container, container.hostConfig})
-		if err != nil {
-			return err
-		}
-		job.Stdout.Write(b)
-		return nil
+
+	return &ContainerJSONRaw{container, container.hostConfig}, nil
+}
+
+func (daemon *Daemon) ContainerInspect(name string) (*ContainerJSON, error) {
+	container, err := daemon.Get(name)
+	if err != nil {
+		return nil, err
 	}
 
-	out := &engine.Env{}
-	out.SetJson("Id", container.ID)
-	out.SetAuto("Created", container.Created)
-	out.SetJson("Path", container.Path)
-	out.SetList("Args", container.Args)
-	out.SetJson("Config", container.Config)
-	out.SetJson("State", container.State)
-	out.Set("Image", container.ImageID)
-	out.SetJson("NetworkSettings", container.NetworkSettings)
-	out.Set("ResolvConfPath", container.ResolvConfPath)
-	out.Set("HostnamePath", container.HostnamePath)
-	out.Set("HostsPath", container.HostsPath)
-	out.Set("LogPath", container.LogPath)
-	out.SetJson("Name", container.Name)
-	out.SetInt("RestartCount", container.RestartCount)
-	out.Set("Driver", container.Driver)
-	out.Set("ExecDriver", container.ExecDriver)
-	out.Set("MountLabel", container.MountLabel)
-	out.Set("ProcessLabel", container.ProcessLabel)
-	out.SetJson("Volumes", container.Volumes)
-	out.SetJson("VolumesRW", container.VolumesRW)
-	out.SetJson("AppArmorProfile", container.AppArmorProfile)
+	container.Lock()
+	defer container.Unlock()
 
-	out.SetList("ExecIDs", container.GetExecIDs())
+	out := &ContainerJSON{
+		Id:              container.ID,
+		Created:         container.Created,
+		Path:            container.Path,
+		Args:            container.Args,
+		Config:          container.Config,
+		State:           container.State,
+		Image:           container.ImageID,
+		NetworkSettings: container.NetworkSettings,
+		ResolvConfPath:  container.ResolvConfPath,
+		HostnamePath:    container.HostnamePath,
+		HostsPath:       container.HostsPath,
+		LogPath:         container.LogPath,
+		Name:            container.Name,
+		RestartCount:    container.RestartCount,
+		Driver:          container.Driver,
+		ExecDriver:      container.ExecDriver,
+		MountLabel:      container.MountLabel,
+		ProcessLabel:    container.ProcessLabel,
+		Volumes:         container.Volumes,
+		VolumesRW:       container.VolumesRW,
+		AppArmorProfile: container.AppArmorProfile,
+		ExecIDs:         container.GetExecIDs(),
+	}
 
 	if children, err := daemon.Children(container.Name); err == nil {
 		for linkAlias, child := range children {
@@ -71,13 +102,11 @@ func (daemon *Daemon) ContainerInspect(job *engine.Job) error {
 		}()
 	}
 
-	out.SetJson("HostConfig", container.hostConfig)
+	out.HostConfig = container.hostConfig
 
 	container.hostConfig.Links = nil
-	if _, err := out.WriteTo(job.Stdout); err != nil {
-		return err
-	}
-	return nil
+
+	return out, nil
 }
 
 func (daemon *Daemon) ContainerExecInspect(job *engine.Job) error {

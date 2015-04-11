@@ -117,19 +117,17 @@ type Daemon struct {
 // Install installs daemon capabilities to eng.
 func (daemon *Daemon) Install(eng *engine.Engine) error {
 	for name, method := range map[string]engine.Handler{
-		"commit":            daemon.ContainerCommit,
-		"container_inspect": daemon.ContainerInspect,
-		"container_stats":   daemon.ContainerStats,
-		"create":            daemon.ContainerCreate,
-		"export":            daemon.ContainerExport,
-		"info":              daemon.CmdInfo,
-		"logs":              daemon.ContainerLogs,
-		"restart":           daemon.ContainerRestart,
-		"start":             daemon.ContainerStart,
-		"stop":              daemon.ContainerStop,
-		"execCreate":        daemon.ContainerExecCreate,
-		"execStart":         daemon.ContainerExecStart,
-		"execInspect":       daemon.ContainerExecInspect,
+		"commit":          daemon.ContainerCommit,
+		"container_stats": daemon.ContainerStats,
+		"create":          daemon.ContainerCreate,
+		"export":          daemon.ContainerExport,
+		"info":            daemon.CmdInfo,
+		"restart":         daemon.ContainerRestart,
+		"start":           daemon.ContainerStart,
+		"stop":            daemon.ContainerStop,
+		"execCreate":      daemon.ContainerExecCreate,
+		"execStart":       daemon.ContainerExecStart,
+		"execInspect":     daemon.ContainerExecInspect,
 	} {
 		if err := eng.Register(name, method); err != nil {
 			return err
