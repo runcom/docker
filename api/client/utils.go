@@ -230,15 +230,17 @@ func waitForExit(cli *DockerCli, containerID string) (int, error) {
 		return -1, err
 	}
 
-	var out engine.Env
-	if err := out.Decode(stream); err != nil {
+	var res ContainerWaitResponse
+	if err := json.NewDecoder(stream).Decode(&res); err != nil {
 		return -1, err
 	}
-	return out.GetInt("StatusCode"), nil
+
+	return res.StatusCode, nil
 }
 
 // getExitCode perform an inspect on the container. It returns
 // the running state and the exit code.
+// FIXME: @runcom
 func getExitCode(cli *DockerCli, containerID string) (bool, int, error) {
 	stream, _, err := cli.call("GET", "/containers/"+containerID+"/json", nil, nil)
 	if err != nil {
@@ -270,12 +272,19 @@ func getExecExitCode(cli *DockerCli, execID string) (bool, int, error) {
 		return false, -1, nil
 	}
 
-	var result engine.Env
-	if err := result.Decode(stream); err != nil {
+	// TODO: maybe move to types?
+	// no need to expose full daemon.execConfig
+	// even if I like the fact the client should declare types to decode in here
+	type execJsonResponse struct {
+		Running  bool
+		ExitCode int
+	}
+	var res execJsonResponse
+	if err := json.NewDecoder(stream).Decode(&res); err != nil {
 		return false, -1, err
 	}
 
-	return result.GetBool("Running"), result.GetInt("ExitCode"), nil
+	return res.Running, res.ExitCode, nil
 }
 
 func (cli *DockerCli) monitorTtySize(id string, isExec bool) error {
