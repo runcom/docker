@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	apiserver "github.com/docker/docker/api/server"
 	"github.com/docker/docker/daemon"
 	"github.com/docker/docker/daemon/execdriver"
 	"github.com/docker/docker/engine"
@@ -168,9 +169,7 @@ func spawnGlobalDaemon() {
 	// FIXME: use inmem transports instead of tcp
 	time.Sleep(time.Second)
 
-	if err := eng.Job("acceptconnections").Run(); err != nil {
-		logrus.Fatalf("Unable to accept connections for test api: %s", err)
-	}
+	apiserver.AcceptConnections()
 }
 
 func spawnLegitHttpsDaemon() {
@@ -222,9 +221,8 @@ func spawnHttpsDaemon(addr, cacert, cert, key string) *engine.Engine {
 	// Give some time to ListenAndServer to actually start
 	time.Sleep(time.Second)
 
-	if err := eng.Job("acceptconnections").Run(); err != nil {
-		logrus.Fatalf("Unable to accept connections for test api: %s", err)
-	}
+	apiserver.AcceptConnections()
+
 	return eng
 }
 

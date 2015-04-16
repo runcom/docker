@@ -41,6 +41,19 @@ var (
 	activationLock = make(chan struct{})
 )
 
+type ServerConfig struct {
+	Logging     bool
+	EnableCors  bool
+	CorsHeaders []string
+	Version     string
+	SocketGroup string
+	Tls         bool
+	TlsVerify   bool
+	TlsCa       string
+	TlsCert     string
+	TlsKey      string
+}
+
 type HttpServer struct {
 	srv *http.Server
 	l   net.Listener
@@ -187,6 +200,9 @@ func postAuth(eng *engine.Engine, version version.Version, w http.ResponseWriter
 
 func getVersion(eng *engine.Engine, version version.Version, w http.ResponseWriter, r *http.Request, vars map[string]string) error {
 	w.Header().Set("Content-Type", "application/json")
+
+	// VERSION here!
+
 	eng.ServeHTTP(w, r)
 	return nil
 }
@@ -1588,14 +1604,8 @@ type Server interface {
 
 // ServeApi loops through all of the protocols sent in to docker and spawns
 // off a go routine to setup a serving http.Server for each.
-func ServeApi(job *engine.Job) error {
-	if len(job.Args) == 0 {
-		return fmt.Errorf("usage: %s PROTO://ADDR [PROTO://ADDR ...]", job.Name)
-	}
-	var (
-		protoAddrs = job.Args
-		chErrors   = make(chan error, len(protoAddrs))
-	)
+func ServeApi(protoAddrs []string, conf *ServerConfig) error {
+	var chErrors = make(chan error, len(protoAddrs))
 
 	for _, protoAddr := range protoAddrs {
 		protoAddrParts := strings.SplitN(protoAddr, "://", 2)
@@ -1604,7 +1614,7 @@ func ServeApi(job *engine.Job) error {
 		}
 		go func() {
 			logrus.Infof("Listening for HTTP on %s (%s)", protoAddrParts[0], protoAddrParts[1])
-			srv, err := NewServer(protoAddrParts[0], protoAddrParts[1], job)
+			srv, err := NewServer(protoAddrParts[0], protoAddrParts[1], conf, job)
 			if err != nil {
 				chErrors <- err
 				return
