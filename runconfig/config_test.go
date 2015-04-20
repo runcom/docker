@@ -163,7 +163,7 @@ func TestParseRunVolumes(t *testing.T) {
 	}
 }
 
-func TestCompare(t *testing.T) {
+func TestCompareTo(t *testing.T) {
 	volumes1 := make(map[string]struct{})
 	volumes1["/test1"] = struct{}{}
 	config1 := Config{
@@ -183,14 +183,14 @@ func TestCompare(t *testing.T) {
 		Env:       []string{"VAR1=1", "VAR2=2"},
 		Volumes:   volumes2,
 	}
-	if Compare(&config1, &config3) {
-		t.Fatalf("Compare should return false, PortSpecs are different")
+	if config1.CompareTo(&config3) {
+		t.Fatalf("CompareTo should return false, PortSpecs are different")
 	}
-	if Compare(&config1, &config5) {
-		t.Fatalf("Compare should return false, Volumes are different")
+	if config1.CompareTo(&config5) {
+		t.Fatalf("CompareTo should return false, Volumes are different")
 	}
-	if !Compare(&config1, &config1) {
-		t.Fatalf("Compare should return true")
+	if !config1.CompareTo(&config1) {
+		t.Fatalf("CompareTo should return true")
 	}
 }
 

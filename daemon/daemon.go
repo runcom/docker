@@ -1184,7 +1184,7 @@ func (daemon *Daemon) ImageGetCached(imgID string, config *runconfig.Config) (*i
 		if !ok {
 			return nil, fmt.Errorf("unable to find image %q", elem)
 		}
-		if runconfig.Compare(&img.ContainerConfig, config) {
+		if img.ContainerConfig.CompareTo(config) {
 			if match == nil || match.Created.Before(img.Created) {
 				match = img
 			}

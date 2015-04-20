@@ -148,3 +148,70 @@ func DecodeContainerConfig(src io.Reader) (*Config, *HostConfig, error) {
 
 	return w.Config, w.HostConfig(), nil
 }
+
+// Compare two Config struct. Do not compare the "Image" nor "Hostname" fields
+// If OpenStdin is set, then it differs
+func (c *Config) CompareTo(config *Config) bool {
+	if c == nil || config == nil || c.OpenStdin || config.OpenStdin {
+		return false
+	}
+	if c.AttachStdout != config.AttachStdout ||
+		c.AttachStderr != config.AttachStderr ||
+		c.User != config.User ||
+		c.OpenStdin != config.OpenStdin ||
+		c.Tty != config.Tty {
+		return false
+	}
+
+	if c.Cmd.Len() != config.Cmd.Len() ||
+		len(c.Env) != len(config.Env) ||
+		len(c.Labels) != len(config.Labels) ||
+		len(c.PortSpecs) != len(config.PortSpecs) ||
+		len(c.ExposedPorts) != len(config.ExposedPorts) ||
+		c.Entrypoint.Len() != config.Entrypoint.Len() ||
+		len(c.Volumes) != len(config.Volumes) {
+		return false
+	}
+
+	aCmd := c.Cmd.Slice()
+	bCmd := config.Cmd.Slice()
+	for i := 0; i < len(aCmd); i++ {
+		if aCmd[i] != bCmd[i] {
+			return false
+		}
+	}
+	for i := 0; i < len(c.Env); i++ {
+		if c.Env[i] != config.Env[i] {
+			return false
+		}
+	}
+	for k, v := range c.Labels {
+		if v != config.Labels[k] {
+			return false
+		}
+	}
+	for i := 0; i < len(c.PortSpecs); i++ {
+		if c.PortSpecs[i] != config.PortSpecs[i] {
+			return false
+		}
+	}
+	for k := range c.ExposedPorts {
+		if _, exists := config.ExposedPorts[k]; !exists {
+			return false
+		}
+	}
+
+	aEntrypoint := c.Entrypoint.Slice()
+	bEntrypoint := config.Entrypoint.Slice()
+	for i := 0; i < len(aEntrypoint); i++ {
+		if aEntrypoint[i] != bEntrypoint[i] {
+			return false
+		}
+	}
+	for key := range c.Volumes {
+		if _, exists := config.Volumes[key]; !exists {
+			return false
+		}
+	}
+	return true
+}
