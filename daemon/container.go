@@ -26,7 +26,6 @@ import (
 	"github.com/docker/docker/daemon/logger/syslog"
 	"github.com/docker/docker/daemon/network"
 	"github.com/docker/docker/daemon/networkdriver/bridge"
-	"github.com/docker/docker/engine"
 	"github.com/docker/docker/image"
 	"github.com/docker/docker/links"
 	"github.com/docker/docker/nat"
@@ -576,10 +575,7 @@ func (container *Container) AllocateNetwork() error {
 		return nil
 	}
 
-	var (
-		err error
-		eng = container.daemon.eng
-	)
+	var err error
 
 	networkSettings, err := bridge.Allocate(container.ID, container.Config.MacAddress, "", "")
 	if err != nil {
@@ -626,7 +622,7 @@ func (container *Container) AllocateNetwork() error {
 	container.NetworkSettings.PortMapping = nil
 
 	for port := range portSpecs {
-		if err = container.allocatePort(eng, port, bindings); err != nil {
+		if err = container.allocatePort(port, bindings); err != nil {
 			bridge.Release(container.ID)
 			return err
 		}
@@ -662,8 +658,6 @@ func (container *Container) RestoreNetwork() error {
 		return nil
 	}
 
-	eng := container.daemon.eng
-
 	// Re-allocate the interface with the same IP and MAC address.
 	if _, err := bridge.Allocate(container.ID, container.NetworkSettings.MacAddress, container.NetworkSettings.IPAddress, ""); err != nil {
 		return err
@@ -671,7 +665,7 @@ func (container *Container) RestoreNetwork() error {
 
 	// Re-allocate any previously allocated ports.
 	for port := range container.NetworkSettings.Ports {
-		if err := container.allocatePort(eng, port, container.NetworkSettings.Ports); err != nil {
+		if err := container.allocatePort(port, container.NetworkSettings.Ports); err != nil {
 			return err
 		}
 	}
@@ -1459,7 +1453,7 @@ func (container *Container) waitForStart() error {
 	return nil
 }
 
-func (container *Container) allocatePort(eng *engine.Engine, port nat.Port, bindings nat.PortMap) error {
+func (container *Container) allocatePort(port nat.Port, bindings nat.PortMap) error {
 	binding := bindings[port]
 	if container.hostConfig.PublishAllPorts && len(binding) == 0 {
 		binding = append(binding, nat.PortBinding{})

@@ -27,7 +27,6 @@ import (
 	_ "github.com/docker/docker/daemon/graphdriver/vfs"
 	"github.com/docker/docker/daemon/network"
 	"github.com/docker/docker/daemon/networkdriver/bridge"
-	"github.com/docker/docker/engine"
 	"github.com/docker/docker/graph"
 	"github.com/docker/docker/image"
 	"github.com/docker/docker/pkg/archive"
@@ -38,7 +37,6 @@ import (
 	"github.com/docker/docker/pkg/namesgenerator"
 	"github.com/docker/docker/pkg/parsers"
 	"github.com/docker/docker/pkg/parsers/kernel"
-	"github.com/docker/docker/pkg/pidfile"
 	"github.com/docker/docker/pkg/resolvconf"
 	"github.com/docker/docker/pkg/stringid"
 	"github.com/docker/docker/pkg/sysinfo"
@@ -103,7 +101,6 @@ type Daemon struct {
 	idIndex          *truncindex.TruncIndex
 	sysInfo          *sysinfo.SysInfo
 	volumes          *volumes.Repository
-	eng              *engine.Engine
 	config           *Config
 	containerGraph   *graphdb.Database
 	driver           graphdriver.Driver
@@ -112,14 +109,6 @@ type Daemon struct {
 	defaultLogConfig runconfig.LogConfig
 	RegistryService  *registry.Service
 	EventsService    *events.Events
-}
-
-// Install installs daemon capabilities to eng.
-func (daemon *Daemon) Install(eng *engine.Engine) error {
-	// FIXME: this hack is necessary for legacy integration tests to access
-	// the daemon object.
-	eng.HackSetGlobalVar("httpapi.daemon", daemon)
-	return nil
 }
 
 // Get looks for a container using the provided information, which could be
@@ -741,16 +730,7 @@ func (daemon *Daemon) RegisterLinks(container *Container, hostConfig *runconfig.
 	return nil
 }
 
-// FIXME: harmonize with NewGraph()
-func NewDaemon(config *Config, eng *engine.Engine, registryService *registry.Service) (*Daemon, error) {
-	daemon, err := NewDaemonFromDirectory(config, eng, registryService)
-	if err != nil {
-		return nil, err
-	}
-	return daemon, nil
-}
-
-func NewDaemonFromDirectory(config *Config, eng *engine.Engine, registryService *registry.Service) (*Daemon, error) {
+func NewDaemon(config *Config, registryService *registry.Service) (daemon *Daemon, err error) {
 	if config.Mtu == 0 {
 		config.Mtu = getDefaultNetworkMtu()
 	}
@@ -765,19 +745,6 @@ func NewDaemonFromDirectory(config *Config, eng *engine.Engine, registryService 
 		config.Bridge.EnableIpMasq = false
 	}
 	config.DisableNetwork = config.Bridge.Iface == disableNetworkBridge
-
-	// Claim the pidfile first, to avoid any and all unexpected race conditions.
-	// Some of the init doesn't need a pidfile lock - but let's not try to be smart.
-	if config.Pidfile != "" {
-		file, err := pidfile.New(config.Pidfile)
-		if err != nil {
-			return nil, err
-		}
-		eng.OnShutdown(func() {
-			// Always release the pidfile last, just in case
-			file.Remove()
-		})
-	}
 
 	// Check that the system is supported and we have sufficient privileges
 	if runtime.GOOS != "linux" {
@@ -826,17 +793,22 @@ func NewDaemonFromDirectory(config *Config, eng *engine.Engine, registryService 
 		return nil, fmt.Errorf("error intializing graphdriver: %v", err)
 	}
 	logrus.Debugf("Using graph driver %s", driver)
-	// register cleanup for graph driver
-	eng.OnShutdown(func() {
-		if err := driver.Cleanup(); err != nil {
-			logrus.Errorf("Error during graph storage driver.Cleanup(): %v", err)
+
+	daemon = &Daemon{}
+	daemon.driver = driver
+
+	defer func() {
+		if err != nil {
+			if err := daemon.Shutdown(); err != nil {
+				logrus.Error(err)
+			}
 		}
-	})
+	}()
 
 	if config.EnableSelinuxSupport {
 		if selinuxEnabled() {
 			// As Docker on btrfs and SELinux are incompatible at present, error on both being enabled
-			if driver.String() == "btrfs" {
+			if daemon.driver.String() == "btrfs" {
 				return nil, fmt.Errorf("SELinux is not supported with the BTRFS graph driver")
 			}
 			logrus.Debug("SELinux enabled successfully")
@@ -854,12 +826,12 @@ func NewDaemonFromDirectory(config *Config, eng *engine.Engine, registryService 
 	}
 
 	// Migrate the container if it is aufs and aufs is enabled
-	if err = migrateIfAufs(driver, config.Root); err != nil {
+	if err := migrateIfAufs(daemon.driver, config.Root); err != nil {
 		return nil, err
 	}
 
 	logrus.Debug("Creating images graph")
-	g, err := graph.NewGraph(path.Join(config.Root, "graph"), driver)
+	g, err := graph.NewGraph(path.Join(config.Root, "graph"), daemon.driver)
 	if err != nil {
 		return nil, err
 	}
@@ -897,7 +869,7 @@ func NewDaemonFromDirectory(config *Config, eng *engine.Engine, registryService 
 		Events:   eventsService,
 		Trust:    trustService,
 	}
-	repositories, err := graph.NewTagStore(path.Join(config.Root, "repositories-"+driver.String()), tagCfg)
+	repositories, err := graph.NewTagStore(path.Join(config.Root, "repositories-"+daemon.driver.String()), tagCfg)
 	if err != nil {
 		return nil, fmt.Errorf("Couldn't create Tag store: %s", err)
 	}
@@ -913,12 +885,8 @@ func NewDaemonFromDirectory(config *Config, eng *engine.Engine, registryService 
 	if err != nil {
 		return nil, err
 	}
-	// register graph close on shutdown
-	eng.OnShutdown(func() {
-		if err := graph.Close(); err != nil {
-			logrus.Errorf("Error during container graph.Close(): %v", err)
-		}
-	})
+
+	daemon.containerGraph = graph
 
 	localCopy := path.Join(config.Root, "init", fmt.Sprintf("dockerinit-%s", dockerversion.VERSION))
 	sysInitPath := utils.DockerInitPath(localCopy)
@@ -947,33 +915,22 @@ func NewDaemonFromDirectory(config *Config, eng *engine.Engine, registryService 
 		return nil, err
 	}
 
-	daemon := &Daemon{
-		ID:               trustKey.PublicKey().KeyID(),
-		repository:       daemonRepo,
-		containers:       &contStore{s: make(map[string]*Container)},
-		execCommands:     newExecStore(),
-		graph:            g,
-		repositories:     repositories,
-		idIndex:          truncindex.NewTruncIndex([]string{}),
-		sysInfo:          sysInfo,
-		volumes:          volumes,
-		config:           config,
-		containerGraph:   graph,
-		driver:           driver,
-		sysInitPath:      sysInitPath,
-		execDriver:       ed,
-		eng:              eng,
-		statsCollector:   newStatsCollector(1 * time.Second),
-		defaultLogConfig: config.LogConfig,
-		RegistryService:  registryService,
-		EventsService:    eventsService,
-	}
-
-	eng.OnShutdown(func() {
-		if err := daemon.shutdown(); err != nil {
-			logrus.Errorf("Error during daemon.shutdown(): %v", err)
-		}
-	})
+	daemon.ID = trustKey.PublicKey().KeyID()
+	daemon.repository = daemonRepo
+	daemon.containers = &contStore{s: make(map[string]*Container)}
+	daemon.execCommands = newExecStore()
+	daemon.graph = g
+	daemon.repositories = repositories
+	daemon.idIndex = truncindex.NewTruncIndex([]string{})
+	daemon.sysInfo = sysInfo
+	daemon.volumes = volumes
+	daemon.config = config
+	daemon.sysInitPath = sysInitPath
+	daemon.execDriver = ed
+	daemon.statsCollector = newStatsCollector(1 * time.Second)
+	daemon.defaultLogConfig = config.LogConfig
+	daemon.RegistryService = registryService
+	daemon.EventsService = eventsService
 
 	if err := daemon.restore(); err != nil {
 		return nil, err
@@ -987,7 +944,17 @@ func NewDaemonFromDirectory(config *Config, eng *engine.Engine, registryService 
 	return daemon, nil
 }
 
-func (daemon *Daemon) shutdown() error {
+func (daemon *Daemon) Shutdown() error {
+	if daemon.containerGraph != nil {
+		if err := daemon.containerGraph.Close(); err != nil {
+			logrus.Errorf("Error during container graph.Close(): %v", err)
+		}
+	}
+	if daemon.driver != nil {
+		if err := daemon.driver.Cleanup(); err != nil {
+			logrus.Errorf("Error during graph storage driver.Cleanup(): %v", err)
+		}
+	}
 	group := sync.WaitGroup{}
 	logrus.Debug("starting clean shutdown of all containers...")
 	for _, container := range daemon.List() {
@@ -1085,26 +1052,6 @@ func (daemon *Daemon) UnsubscribeToContainerStats(name string, ch chan interface
 	}
 	daemon.statsCollector.unsubscribe(c, ch)
 	return nil
-}
-
-// Nuke kills all containers then removes all content
-// from the content root, including images, volumes and
-// container filesystems.
-// Again: this will remove your entire docker daemon!
-// FIXME: this is deprecated, and only used in legacy
-// tests. Please remove.
-func (daemon *Daemon) Nuke() error {
-	var wg sync.WaitGroup
-	for _, container := range daemon.List() {
-		wg.Add(1)
-		go func(c *Container) {
-			c.Kill()
-			wg.Done()
-		}(container)
-	}
-	wg.Wait()
-
-	return os.RemoveAll(daemon.config.Root)
 }
 
 // FIXME: this is a convenience function for integration tests
