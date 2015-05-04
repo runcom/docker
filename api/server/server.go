@@ -1128,18 +1128,11 @@ func (s *Server) postContainersAttach(version version.Version, w http.ResponseWr
 		return fmt.Errorf("Missing parameter")
 	}
 
-	cont, err := s.daemon.Get(vars["name"])
-	if err != nil {
-		return err
-	}
-
 	inStream, outStream, err := hijackServer(w)
 	if err != nil {
 		return err
 	}
 	defer closeStreams(inStream, outStream)
-
-	var errStream io.Writer
 
 	if _, ok := r.Header["Upgrade"]; ok {
 		fmt.Fprintf(outStream, "HTTP/1.1 101 UPGRADED\r\nContent-Type: application/vnd.docker.raw-stream\r\nConnection: Upgrade\r\nUpgrade: tcp\r\n\r\n")
@@ -1147,31 +1140,20 @@ func (s *Server) postContainersAttach(version version.Version, w http.ResponseWr
 		fmt.Fprintf(outStream, "HTTP/1.1 200 OK\r\nContent-Type: application/vnd.docker.raw-stream\r\n\r\n")
 	}
 
-	if !cont.Config.Tty && version.GreaterThanOrEqualTo("1.6") {
-		errStream = stdcopy.NewStdWriter(outStream, stdcopy.Stderr)
-		outStream = stdcopy.NewStdWriter(outStream, stdcopy.Stdout)
-	} else {
-		errStream = outStream
-	}
-	logs := boolValue(r, "logs")
-	stream := boolValue(r, "stream")
-
-	var stdin io.ReadCloser
-	var stdout, stderr io.Writer
-
-	if boolValue(r, "stdin") {
-		stdin = inStream
-	}
-	if boolValue(r, "stdout") {
-		stdout = outStream
-	}
-	if boolValue(r, "stderr") {
-		stderr = errStream
+	attachConfig := &daemon.ContainerAttachWithLogsConfig{
+		UseStdin:  boolValue(r, "stdin"),
+		UseStdout: boolValue(r, "stdout"),
+		UseStderr: boolValue(r, "stderr"),
+		InStream:  inStream,
+		OutStream: outStream,
+		Logs:      boolValue(r, "logs"),
+		Stream:    boolValue(r, "stream"),
 	}
 
-	if err := cont.AttachWithLogs(stdin, stdout, stderr, logs, stream); err != nil {
+	if err := s.daemon.ContainerAttachWithLogs(vars["name"], attachConfig); err != nil {
 		fmt.Fprintf(outStream, "Error attaching: %s\n", err)
 	}
+
 	return nil
 }
 
