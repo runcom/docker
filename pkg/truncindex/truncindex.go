@@ -2,7 +2,6 @@ package truncindex
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 	"sync"
 
@@ -12,6 +11,10 @@ import (
 var (
 	ErrEmptyPrefix     = errors.New("Prefix can't be empty")
 	ErrAmbiguousPrefix = errors.New("Multiple IDs found with provided prefix")
+	ErrNoSuchID        = errors.New("No such ID")
+	ErrIllegalChar     = errors.New("Illegal character: ' '")
+	ErrIDAlreadyExists = errors.New("ID already exists")
+	ErrInsertFailed    = errors.New("Insert failed")
 )
 
 // TruncIndex allows the retrieval of string identifiers by any of their unique prefixes.
@@ -39,17 +42,17 @@ func NewTruncIndex(ids []string) (idx *TruncIndex) {
 
 func (idx *TruncIndex) addID(id string) error {
 	if strings.Contains(id, " ") {
-		return fmt.Errorf("illegal character: ' '")
+		return ErrIllegalChar{Char: ' '}
 	}
 	if id == "" {
-		return ErrEmptyPrefix
+		return ErrEmptyPrefix{}
 	}
 	if _, exists := idx.ids[id]; exists {
-		return fmt.Errorf("id already exists: '%s'", id)
+		return ErrIDAlreadyExists{ID: id}
 	}
 	idx.ids[id] = struct{}{}
 	if inserted := idx.trie.Insert(patricia.Prefix(id), struct{}{}); !inserted {
-		return fmt.Errorf("failed to insert id: %s", id)
+		return ErrInsertFailed{ID: id}
 	}
 	return nil
 }
@@ -70,11 +73,11 @@ func (idx *TruncIndex) Delete(id string) error {
 	idx.Lock()
 	defer idx.Unlock()
 	if _, exists := idx.ids[id]; !exists || id == "" {
-		return fmt.Errorf("no such id: '%s'", id)
+		return ErrNoSuchID{ID: id}
 	}
 	delete(idx.ids, id)
 	if deleted := idx.trie.Delete(patricia.Prefix(id)); !deleted {
-		return fmt.Errorf("no such id: '%s'", id)
+		return ErrNoSuchID{ID: id}
 	}
 	return nil
 }
@@ -83,7 +86,7 @@ func (idx *TruncIndex) Delete(id string) error {
 // with the given prefix, an error is thrown.
 func (idx *TruncIndex) Get(s string) (string, error) {
 	if s == "" {
-		return "", ErrEmptyPrefix
+		return "", ErrEmptyPrefix{}
 	}
 	var (
 		id string
@@ -92,7 +95,7 @@ func (idx *TruncIndex) Get(s string) (string, error) {
 		if id != "" {
 			// we haven't found the ID if there are two or more IDs
 			id = ""
-			return ErrAmbiguousPrefix
+			return ErrAmbiguousPrefix{}
 		}
 		id = string(prefix)
 		return nil
@@ -106,5 +109,5 @@ func (idx *TruncIndex) Get(s string) (string, error) {
 	if id != "" {
 		return id, nil
 	}
-	return "", fmt.Errorf("no such id: %s", s)
+	return "", ErrNoSuchID{ID: s}
 }
