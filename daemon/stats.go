@@ -9,7 +9,7 @@ import (
 )
 
 func (daemon *Daemon) ContainerStats(name string, stream bool, out io.Writer) error {
-	updates, err := daemon.SubscribeToContainerStats(name)
+	c, err := daemon.Get(name)
 	if err != nil {
 		return err
 	}

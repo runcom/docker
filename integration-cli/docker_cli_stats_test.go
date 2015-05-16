@@ -8,21 +8,29 @@ import (
 	"github.com/go-check/check"
 )
 
-func (s *DockerSuite) TestCliStatsNoStream(c *check.C) {
+func (s *DockerSuite) TestStatsNoStream(c *check.C) {
 	out, _, err := runCommandWithOutput(exec.Command(dockerBinary, "run", "-d", "busybox", "top"))
-	if err != nil {
-		c.Fatalf("Error on container creation: %v, output: %s", err, out)
-	}
+	c.Assert(err, check.IsNil)
 	id := strings.TrimSpace(out)
-	if err := waitRun(id); err != nil {
-		c.Fatalf("error waiting for container to start: %v", err)
-	}
+	c.Assert(waitRun(id), check.IsNil)
 
-	statsCmd := exec.Command(dockerBinary, "stats", "--no-stream", id)
-	chErr := make(chan error)
-	go func() {
-		chErr <- statsCmd.Run()
-	}()
+	out, _, err = runCommandWithOutput(exec.Command(dockerBinary, "stats", "--no-stream", id))
+	c.Assert(err, check.IsNil)
+	if !strings.Contains(out, id) {
+		c.Fatalf("Expected output to contain %s, got instead: %s", id, out)
+	}
+}
+
+func (*DockerSuite) TestStatsAllNoStream(c *check.C) {
+	out, _, err := runCommandWithOutput(exec.Command(dockerBinary, "run", "-d", "busybox", "top"))
+	c.Assert(err, check.IsNil)
+	id1 := strings.TrimSpace(out)
+	c.Assert(waitRun(id1), check.IsNil)
+
+	out, _, err = runCommandWithOutput(exec.Command(dockerBinary, "run", "-d", "busybox", "top"))
+	c.Assert(err, check.IsNil)
+	id2 := strings.TrimSpace(out)
+	c.Assert(waitRun(id2), check.IsNil)
 
 	select {
 	case err := <-chErr:
