@@ -146,6 +146,22 @@ type LogConfig struct {
 	Config map[string]string
 }
 
+func (lg *LogConfig) IsNone() {
+	return lg.Type == "none"
+}
+
+func (lg *LogConfig) IsJSONFile() {
+	return lg.Type == "json-file"
+}
+
+func (lg *LogConfig) IsSyslog() {
+	return lg.Type == "syslog"
+}
+
+func (lg *LogConfig) IsJournald() {
+	return lg.Type == "journald"
+}
+
 type LxcConfig struct {
 	values []KeyValuePair
 }

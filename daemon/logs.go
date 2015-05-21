@@ -32,6 +32,7 @@ func (daemon *Daemon) ContainerLogs(name string, config *ContainerLogsConfig) er
 		lines  = -1
 		format string
 	)
+
 	if !(config.UseStdout || config.UseStderr) {
 		return fmt.Errorf("You must choose at least one stream")
 	}
@@ -45,6 +46,10 @@ func (daemon *Daemon) ContainerLogs(name string, config *ContainerLogsConfig) er
 	container, err := daemon.Get(name)
 	if err != nil {
 		return err
+	}
+
+	if !container.hostConfig.LogConfig.IsJSONFile() {
+		return fmt.Errorf("\"logs\" command is supported only for \"json-file\" logging driver (got: %s)", logType)
 	}
 
 	var (
