@@ -26,8 +26,7 @@ func init() {
 }
 
 func New(ctx logger.Context) (logger.Logger, error) {
-	tag := ctx.ContainerID[:12]
-	log, err := syslog.New(syslog.LOG_DAEMON, fmt.Sprintf("%s/%s", path.Base(os.Args[0]), tag))
+	log, err := syslog.New(syslog.LOG_DAEMON, fmt.Sprintf("%s/%s", path.Base(os.Args[0]), getTag(ctx)))
 	if err != nil {
 		return nil, err
 	}
@@ -54,4 +53,15 @@ func (s *Syslog) Name() string {
 
 func (s *Syslog) GetReader() (io.Reader, error) {
 	return nil, logger.ReadLogsNotSupported
+}
+
+func getTag(ctx logger.Context) string {
+	switch ctx.Config["syslog-tag"] {
+	case "name":
+		return ctx.ContainerID[:12]
+	case "":
+	case "id":
+		return ctx.ContainerName
+	}
+	return ctx.ContainerID[:12]
 }
