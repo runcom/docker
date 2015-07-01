@@ -174,50 +174,11 @@ func NewLxcConfig(values []KeyValuePair) *LxcConfig {
 }
 
 type CapList struct {
-	caps []string
-}
-
-func (c *CapList) MarshalJSON() ([]byte, error) {
-	if c == nil {
-		return []byte{}, nil
-	}
-	return json.Marshal(c.Slice())
-}
-
-func (c *CapList) UnmarshalJSON(b []byte) error {
-	if len(b) == 0 {
-		return nil
-	}
-
-	var caps []string
-	if err := json.Unmarshal(b, &caps); err != nil {
-		var s string
-		if err := json.Unmarshal(b, &s); err != nil {
-			return err
-		}
-		caps = append(caps, s)
-	}
-	c.caps = caps
-
-	return nil
-}
-
-func (c *CapList) Len() int {
-	if c == nil {
-		return 0
-	}
-	return len(c.caps)
-}
-
-func (c *CapList) Slice() []string {
-	if c == nil {
-		return nil
-	}
-	return c.caps
+	List
 }
 
 func NewCapList(caps []string) *CapList {
-	return &CapList{caps}
+	return &CapList{List{caps}}
 }
 
 type HostConfig struct {
