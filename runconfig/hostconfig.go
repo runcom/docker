@@ -173,55 +173,9 @@ func NewLxcConfig(values []KeyValuePair) *LxcConfig {
 	return &LxcConfig{values}
 }
 
-type CapList struct {
-	caps []string
-}
-
-func (c *CapList) MarshalJSON() ([]byte, error) {
-	if c == nil {
-		return []byte{}, nil
-	}
-	return json.Marshal(c.Slice())
-}
-
-func (c *CapList) UnmarshalJSON(b []byte) error {
-	if len(b) == 0 {
-		return nil
-	}
-
-	var caps []string
-	if err := json.Unmarshal(b, &caps); err != nil {
-		var s string
-		if err := json.Unmarshal(b, &s); err != nil {
-			return err
-		}
-		caps = append(caps, s)
-	}
-	c.caps = caps
-
-	return nil
-}
-
-func (c *CapList) Len() int {
-	if c == nil {
-		return 0
-	}
-	return len(c.caps)
-}
-
-func (c *CapList) Slice() []string {
-	if c == nil {
-		return nil
-	}
-	return c.caps
-}
-
-func NewCapList(caps []string) *CapList {
-	return &CapList{caps}
-}
-
 type HostConfig struct {
-	Binds           []string
+	//Binds           []string
+	Binds           *List
 	ContainerIDFile string
 	LxcConf         *LxcConfig
 	Memory          int64 // Memory limit (in bytes)
@@ -235,25 +189,26 @@ type HostConfig struct {
 	OomKillDisable  bool  // Whether to disable OOM Killer or not
 	Privileged      bool
 	PortBindings    nat.PortMap
-	Links           []string
+	Links           *List
 	PublishAllPorts bool
-	Dns             []string
-	DnsSearch       []string
-	ExtraHosts      []string
-	VolumesFrom     []string
-	Devices         []DeviceMapping
-	NetworkMode     NetworkMode
-	IpcMode         IpcMode
-	PidMode         PidMode
-	UTSMode         UTSMode
-	CapAdd          *CapList
-	CapDrop         *CapList
-	RestartPolicy   RestartPolicy
-	SecurityOpt     []string
-	ReadonlyRootfs  bool
-	Ulimits         []*ulimit.Ulimit
-	LogConfig       LogConfig
-	CgroupParent    string // Parent cgroup.
+	Dns             *List
+	DnsSearch       *List
+	ExtraHosts      *List
+	//VolumesFrom     []string
+	VolumesFrom    *List
+	Devices        []DeviceMapping
+	NetworkMode    NetworkMode
+	IpcMode        IpcMode
+	PidMode        PidMode
+	UTSMode        UTSMode
+	CapAdd         *List
+	CapDrop        *List
+	RestartPolicy  RestartPolicy
+	SecurityOpt    *List
+	ReadonlyRootfs bool
+	Ulimits        []*ulimit.Ulimit
+	LogConfig      LogConfig
+	CgroupParent   string // Parent cgroup.
 }
 
 func MergeConfigs(config *Config, hostConfig *HostConfig) *ContainerConfigWrapper {

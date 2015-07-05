@@ -126,7 +126,7 @@ type Config struct {
 	Tty             bool // Attach standard streams to a tty, including stdin if it is not closed.
 	OpenStdin       bool // Open stdin
 	StdinOnce       bool // If true, close stdin after the 1 attached client disconnects.
-	Env             []string
+	Env             *List
 	Cmd             *Command
 	Image           string // Name of the image as it was passed by the operator (eg. could be symbolic)
 	Volumes         map[string]struct{}

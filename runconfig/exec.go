@@ -13,7 +13,7 @@ type ExecConfig struct {
 	AttachStderr bool
 	AttachStdout bool
 	Detach       bool
-	Cmd          []string
+	Cmd          *List
 }
 
 func ParseExec(cmd *flag.FlagSet, args []string) (*ExecConfig, error) {
@@ -22,7 +22,7 @@ func ParseExec(cmd *flag.FlagSet, args []string) (*ExecConfig, error) {
 		flTty     = cmd.Bool([]string{"t", "-tty"}, false, "Allocate a pseudo-TTY")
 		flDetach  = cmd.Bool([]string{"d", "-detach"}, false, "Detached mode: run command in the background")
 		flUser    = cmd.String([]string{"u", "-user"}, "", "Username or UID (format: <name|uid>[:<group|gid>])")
-		execCmd   []string
+		execCmd   *List
 		container string
 	)
 	cmd.Require(flag.Min, 2)
@@ -31,7 +31,7 @@ func ParseExec(cmd *flag.FlagSet, args []string) (*ExecConfig, error) {
 	}
 	container = cmd.Arg(0)
 	parsedArgs := cmd.Args()
-	execCmd = parsedArgs[1:]
+	execCmd = NewList(parsedArgs[1:])
 
 	execConfig := &ExecConfig{
 		User: *flUser,

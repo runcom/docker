@@ -23,13 +23,13 @@ func Merge(userConf, imageConf *Config) error {
 		}
 	}
 
-	if len(userConf.Env) == 0 {
+	if len(userConf.Env.Parts) == 0 {
 		userConf.Env = imageConf.Env
 	} else {
-		for _, imageEnv := range imageConf.Env {
+		for _, imageEnv := range imageConf.Env.Parts {
 			found := false
 			imageEnvKey := strings.Split(imageEnv, "=")[0]
-			for _, userEnv := range userConf.Env {
+			for _, userEnv := range userConf.Env.Parts {
 				userEnvKey := strings.Split(userEnv, "=")[0]
 				if imageEnvKey == userEnvKey {
 					found = true
@@ -37,7 +37,7 @@ func Merge(userConf, imageConf *Config) error {
 				}
 			}
 			if !found {
-				userConf.Env = append(userConf.Env, imageEnv)
+				userConf.Env.Parts = append(userConf.Env.Parts, imageEnv)
 			}
 		}
 	}
