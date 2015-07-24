@@ -40,7 +40,7 @@ clone git github.com/vbatts/tar-split v0.9.4
 
 clone git github.com/opencontainers/runc v0.0.2 # libcontainer
 # libcontainer deps (see src/github.com/docker/libcontainer/update-vendor.sh)
-clone git github.com/coreos/go-systemd v2
+clone git github.com/coreos/go-systemd v3
 clone git github.com/godbus/dbus v2
 clone git github.com/syndtr/gocapability 66ef2aa7a23ba682594e2b6f74cf40c0692b49fb
 clone git github.com/golang/protobuf 655cdfa588ea
