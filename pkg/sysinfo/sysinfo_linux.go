@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/docker/docker/pkg/parsers"
 	"github.com/opencontainers/runc/libcontainer/cgroups"
 )
 
@@ -121,7 +122,7 @@ func checkCgroupBlkioInfo(quiet bool) cgroupBlkioInfo {
 
 // checkCgroupCpusetInfo reads the cpuset information from the cpuset cgroup mount point.
 func checkCgroupCpusetInfo(quiet bool) cgroupCpusetInfo {
-	_, err := cgroups.FindCgroupMountpoint("cpuset")
+	mountPoint, err := cgroups.FindCgroupMountpoint("cpuset")
 	if err != nil {
 		if !quiet {
 			logrus.Warn(err)
@@ -129,7 +130,21 @@ func checkCgroupCpusetInfo(quiet bool) cgroupCpusetInfo {
 		return cgroupCpusetInfo{}
 	}
 
-	return cgroupCpusetInfo{Cpuset: true}
+	cpus, err := ioutil.ReadFile(path.Join(mountPoint, "cpuset.cpus"))
+	if err != nil {
+		return cgroupCpusetInfo{}
+	}
+
+	mems, err := ioutil.ReadFile(path.Join(mountPoint, "cpuset.mems"))
+	if err != nil {
+		return cgroupCpusetInfo{}
+	}
+
+	return cgroupCpusetInfo{
+		Cpuset: true,
+		Cpus:   strings.TrimSpace(string(cpus)),
+		Mems:   strings.TrimSpace(string(mems)),
+	}
 }
 
 func cgroupEnabled(mountPoint, name string) bool {
@@ -143,4 +158,36 @@ func readProcBool(path string) bool {
 		return false
 	}
 	return strings.TrimSpace(string(val)) == "1"
+}
+
+// IsCpusetCpusAvailable returns `true` if the provided string set is contained
+// in cgroup's cpuset.cpus set, `false` otherwise.
+func (c cgroupCpusetInfo) IsCpusetCpusAvailable(provided string) bool {
+	return isCpusetListAvailable(provided, c.Cpus)
+}
+
+// IsCpusetMemsAvailable returns `true` if the provided string set is contained
+// in cgroup's cpuset.mems set, `false` otherwise.
+func (c cgroupCpusetInfo) IsCpusetMemsAvailable(provided string) bool {
+	return isCpusetListAvailable(provided, c.Mems)
+}
+
+func isCpusetListAvailable(provided, available string) bool {
+	if provided == "" {
+		return true
+	}
+	parsedProvided, err := parsers.ParseIntList(provided)
+	if err != nil {
+		return false
+	}
+	parsedAvailable, err := parsers.ParseIntList(available)
+	if err != nil {
+		return false
+	}
+	for k := range parsedProvided {
+		if !parsedAvailable[k] {
+			return false
+		}
+	}
+	return true
 }

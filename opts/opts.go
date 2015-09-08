@@ -179,6 +179,15 @@ func ValidateLink(val string) (string, error) {
 	return val, nil
 }
 
+// ValidateCpusetList validates that the specified string has a valid
+// range format
+func ValidateCpusetList(val string) (string, error) {
+	if _, err := parsers.ParseIntList(val); err != nil {
+		return val, err
+	}
+	return val, nil
+}
+
 // ValidDeviceMode checks if the mode for device is valid or not.
 // Valid mode is a composition of r (read), w (write), and m (mknod).
 func ValidDeviceMode(mode string) bool {

@@ -131,6 +131,20 @@ func Parse(cmd *flag.FlagSet, args []string) (*Config, *HostConfig, *flag.FlagSe
 		attachStderr = flAttach.Get("stderr")
 	)
 
+	// validate --cpuset-cpus
+	if *flCpusetCpus != "" {
+		if _, err := opts.ValidateCpusetList(*flCpusetCpus); err != nil {
+			return nil, nil, cmd, fmt.Errorf("invalid --cpuset-cpus format: %s", *flCpusetCpus)
+		}
+	}
+
+	// validate --cpuset-mems
+	if *flCpusetMems != "" {
+		if _, err := opts.ValidateCpusetList(*flCpusetMems); err != nil {
+			return nil, nil, cmd, fmt.Errorf("invalid --cpuset-mems format: %s", *flCpusetMems)
+		}
+	}
+
 	// Validate the input mac address
 	if *flMacAddress != "" {
 		if _, err := opts.ValidateMACAddress(*flMacAddress); err != nil {

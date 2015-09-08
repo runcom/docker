@@ -9,10 +9,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/docker/docker/pkg/mount"
+	"github.com/docker/docker/pkg/parsers"
+	"github.com/docker/docker/pkg/sysinfo"
 	"github.com/go-check/check"
 	"github.com/kr/pty"
 )
@@ -313,5 +316,47 @@ func (s *DockerSuite) TestRunWithSwappinessInvalid(c *check.C) {
 	out, _, err := dockerCmdWithError("run", "--memory-swappiness", "101", "busybox", "true")
 	if err == nil {
 		c.Fatalf("failed. test was able to set invalid value, output: %q", out)
+	}
+}
+
+func (s *DockerSuite) TestRunInvalidCpusetMemsFlagValue(c *check.C) {
+	testRequires(c, cgroupCpuset)
+
+	sysInfo := sysinfo.New(true)
+	mems, err := parsers.ParseIntList(sysInfo.Mems)
+	c.Assert(err, check.IsNil)
+	var invalid int
+	for i := 0; i <= len(mems)+1; i++ {
+		if !mems[i] {
+			invalid = i
+			break
+		}
+	}
+	out, _, err := dockerCmdWithError("run", "--cpuset-mems", strconv.Itoa(invalid), "busybox", "true")
+	c.Assert(err, check.NotNil)
+	expected := fmt.Sprintf("Memory nodes %s provided but not available. Available memory nodes are: %s.", strconv.Itoa(invalid), sysInfo.Mems)
+	if !strings.Contains(strings.TrimSpace(out), expected) {
+		c.Fatalf("Expected output to contain %q, got %q", expected, out)
+	}
+}
+
+func (s *DockerSuite) TestRunInvalidCpusetCpusFlagValue(c *check.C) {
+	testRequires(c, cgroupCpuset)
+
+	sysInfo := sysinfo.New(true)
+	cpus, err := parsers.ParseIntList(sysInfo.Cpus)
+	c.Assert(err, check.IsNil)
+	var invalid int
+	for i := 0; i <= len(cpus)+1; i++ {
+		if !cpus[i] {
+			invalid = i
+			break
+		}
+	}
+	out, _, err := dockerCmdWithError("run", "--cpuset-cpus", strconv.Itoa(invalid), "busybox", "true")
+	c.Assert(err, check.NotNil)
+	expected := fmt.Sprintf("Cpus %s provided but not available. Available cpus are: %s.", strconv.Itoa(invalid), sysInfo.Cpus)
+	if !strings.Contains(strings.TrimSpace(out), expected) {
+		c.Fatalf("Expected output to contain %q, got %q", expected, out)
 	}
 }

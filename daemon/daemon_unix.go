@@ -186,6 +186,12 @@ func verifyPlatformContainerSettings(daemon *Daemon, hostConfig *runconfig.HostC
 		hostConfig.CpusetCpus = ""
 		hostConfig.CpusetMems = ""
 	}
+	if !sysInfo.IsCpusetCpusAvailable(hostConfig.CpusetCpus) {
+		return warnings, fmt.Errorf("Cpus %s provided but not available. Available cpus are: %s.", hostConfig.CpusetCpus, sysInfo.Cpus)
+	}
+	if !sysInfo.IsCpusetMemsAvailable(hostConfig.CpusetMems) {
+		return warnings, fmt.Errorf("Memory nodes %s provided but not available. Available memory nodes are: %s.", hostConfig.CpusetMems, sysInfo.Mems)
+	}
 	if hostConfig.BlkioWeight > 0 && !sysInfo.BlkioWeight {
 		warnings = append(warnings, "Your kernel does not support Block I/O weight. Weight discarded.")
 		logrus.Warnf("Your kernel does not support Block I/O weight. Weight discarded.")
@@ -226,10 +232,7 @@ func checkSystem() error {
 	if os.Geteuid() != 0 {
 		return fmt.Errorf("The Docker daemon needs to be run as root")
 	}
-	if err := checkKernel(); err != nil {
-		return err
-	}
-	return nil
+	return checkKernel()
 }
 
 // configureKernelSecuritySupport configures and validate security support for the kernel

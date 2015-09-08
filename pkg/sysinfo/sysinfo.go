@@ -60,4 +60,10 @@ type cgroupBlkioInfo struct {
 type cgroupCpusetInfo struct {
 	// Whether Cpuset is supported or not
 	Cpuset bool
+
+	// Available Cpuset's cpus
+	Cpus string
+
+	// Available Cpuset's memory nodes
+	Mems string
 }

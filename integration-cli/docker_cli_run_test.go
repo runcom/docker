@@ -3116,3 +3116,21 @@ func (s *DockerSuite) TestTwoContainersInNetHost(c *check.C) {
 	dockerCmd(c, "stop", "first")
 	dockerCmd(c, "stop", "second")
 }
+
+func (s *DockerSuite) TestRunWrongCpusetCpusFlagValue(c *check.C) {
+	out, _, err := dockerCmdWithError("run", "--cpuset-cpus", "1-10,11--", "busybox", "true")
+	c.Assert(err, check.NotNil)
+	expected := "invalid --cpuset-cpus format: 1-10,11--"
+	if !strings.Contains(strings.TrimSpace(out), expected) {
+		c.Fatalf("Expected output to contain %q, got %q", expected, out)
+	}
+}
+
+func (s *DockerSuite) TestRunWrongCpusetMemsFlagValue(c *check.C) {
+	out, _, err := dockerCmdWithError("run", "--cpuset-mems", "1-42--", "busybox", "true")
+	c.Assert(err, check.NotNil)
+	expected := "invalid --cpuset-mems format: 1-42--"
+	if !strings.Contains(strings.TrimSpace(out), expected) {
+		c.Fatalf("Expected output to contain %q, got %q", expected, out)
+	}
+}
