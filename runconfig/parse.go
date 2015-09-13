@@ -39,35 +39,32 @@ var (
 func Parse(cmd *flag.FlagSet, args []string) (*Config, *HostConfig, *flag.FlagSet, error) {
 	var (
 		// FIXME: use utils.ListOpts for attach and volumes?
-		flAttach  = opts.NewListOpts(opts.ValidateAttach)
-		flVolumes = opts.NewListOpts(opts.ValidatePath)
-		flLinks   = opts.NewListOpts(opts.ValidateLink)
-		flEnv     = opts.NewListOpts(opts.ValidateEnv)
-		flLabels  = opts.NewListOpts(opts.ValidateEnv)
-		flDevices = opts.NewListOpts(opts.ValidateDevice)
-
-		flUlimits = opts.NewUlimitOpt(nil)
-
-		flPublish     = opts.NewListOpts(nil)
-		flExpose      = opts.NewListOpts(nil)
-		flDNS         = opts.NewListOpts(opts.ValidateIPAddress)
-		flDNSSearch   = opts.NewListOpts(opts.ValidateDNSSearch)
-		flDNSOptions  = opts.NewListOpts(nil)
-		flExtraHosts  = opts.NewListOpts(opts.ValidateExtraHost)
-		flVolumesFrom = opts.NewListOpts(nil)
-		flLxcOpts     = opts.NewListOpts(nil)
-		flEnvFile     = opts.NewListOpts(nil)
-		flCapAdd      = opts.NewListOpts(nil)
-		flCapDrop     = opts.NewListOpts(nil)
-		flGroupAdd    = opts.NewListOpts(nil)
-		flSecurityOpt = opts.NewListOpts(nil)
-		flLabelsFile  = opts.NewListOpts(nil)
-		flLoggingOpts = opts.NewListOpts(nil)
+		flAttach          = opts.NewListOpts(opts.ValidateAttach)
+		flVolumes         = opts.NewListOpts(opts.ValidatePath)
+		flLinks           = opts.NewListOpts(opts.ValidateLink)
+		flEnv             = opts.NewListOpts(opts.ValidateEnv)
+		flLabels          = opts.NewListOpts(opts.ValidateEnv)
+		flDevices         = opts.NewListOpts(opts.ValidateDevice)
+		flUlimits         = opts.NewUlimitOpt(nil)
+		flPublish         = opts.NewListOpts(nil)
+		flExpose          = opts.NewListOpts(nil)
+		flDNS             = opts.NewListOpts(opts.ValidateIPAddress)
+		flDNSSearch       = opts.NewListOpts(opts.ValidateDNSSearch)
+		flDNSOptions      = opts.NewListOpts(nil)
+		flExtraHosts      = opts.NewListOpts(opts.ValidateExtraHost)
+		flVolumesFrom     = opts.NewListOpts(nil)
+		flLxcOpts         = opts.NewListOpts(nil)
+		flEnvFile         = opts.NewListOpts(nil)
+		flCapAdd          = opts.NewListOpts(nil)
+		flCapDrop         = opts.NewListOpts(nil)
+		flGroupAdd        = opts.NewListOpts(nil)
+		flSecurityOpt     = opts.NewListOpts(nil)
+		flLabelsFile      = opts.NewListOpts(nil)
+		flLoggingOpts     = opts.NewListOpts(nil)
+		flLinuxNamespaces = opts.NewNamespacesOpts(nil)
 
 		flNetwork         = cmd.Bool([]string{"#n", "#-networking"}, true, "Enable networking for this container")
 		flPrivileged      = cmd.Bool([]string{"#privileged", "-privileged"}, false, "Give extended privileges to this container")
-		flPidMode         = cmd.String([]string{"-pid"}, "", "PID namespace to use")
-		flUTSMode         = cmd.String([]string{"-uts"}, "", "UTS namespace to use")
 		flPublishAll      = cmd.Bool([]string{"P", "-publish-all"}, false, "Publish all exposed ports to random ports")
 		flStdin           = cmd.Bool([]string{"i", "-interactive"}, false, "Keep STDIN open even if not attached")
 		flTty             = cmd.Bool([]string{"t", "-tty"}, false, "Allocate a pseudo-TTY")
@@ -89,7 +86,6 @@ func Parse(cmd *flag.FlagSet, args []string) (*Config, *HostConfig, *flag.FlagSe
 		flSwappiness      = cmd.Int64([]string{"-memory-swappiness"}, -1, "Tuning container memory swappiness (0 to 100)")
 		flNetMode         = cmd.String([]string{"-net"}, "default", "Set the Network mode for the container")
 		flMacAddress      = cmd.String([]string{"-mac-address"}, "", "Container MAC address (e.g. 92:d0:c6:0a:29:33)")
-		flIpcMode         = cmd.String([]string{"-ipc"}, "", "IPC namespace to use")
 		flRestartPolicy   = cmd.String([]string{"-restart"}, "no", "Restart policy to apply when a container exits")
 		flReadonlyRootfs  = cmd.Bool([]string{"-read-only"}, false, "Mount the container's root filesystem as read only")
 		flLoggingDriver   = cmd.String([]string{"-log-driver"}, "", "Logging driver for container")
@@ -120,6 +116,7 @@ func Parse(cmd *flag.FlagSet, args []string) (*Config, *HostConfig, *flag.FlagSe
 	cmd.Var(&flSecurityOpt, []string{"-security-opt"}, "Security Options")
 	cmd.Var(flUlimits, []string{"-ulimit"}, "Ulimit options")
 	cmd.Var(&flLoggingOpts, []string{"-log-opt"}, "Log driver options")
+	cmd.Var(&flLinuxNamespaces, []string{"-linux-ns"}, "Linux namespaces to use")
 
 	expFlags := attachExperimentalFlags(cmd)
 
@@ -281,21 +278,6 @@ func Parse(cmd *flag.FlagSet, args []string) (*Config, *HostConfig, *flag.FlagSe
 		return nil, nil, cmd, err
 	}
 
-	ipcMode := IpcMode(*flIpcMode)
-	if !ipcMode.Valid() {
-		return nil, nil, cmd, fmt.Errorf("--ipc: invalid IPC mode")
-	}
-
-	pidMode := PidMode(*flPidMode)
-	if !pidMode.Valid() {
-		return nil, nil, cmd, fmt.Errorf("--pid: invalid PID mode")
-	}
-
-	utsMode := UTSMode(*flUTSMode)
-	if !utsMode.Valid() {
-		return nil, nil, cmd, fmt.Errorf("--uts: invalid UTS mode")
-	}
-
 	restartPolicy, err := ParseRestartPolicy(*flRestartPolicy)
 	if err != nil {
 		return nil, nil, cmd, err
@@ -353,9 +335,7 @@ func Parse(cmd *flag.FlagSet, args []string) (*Config, *HostConfig, *flag.FlagSe
 		ExtraHosts:       flExtraHosts.GetAll(),
 		VolumesFrom:      flVolumesFrom.GetAll(),
 		NetworkMode:      NetworkMode(*flNetMode),
-		IpcMode:          ipcMode,
-		PidMode:          pidMode,
-		UTSMode:          utsMode,
+		LinuxNamespaces:  flLinuxNamespaces.GetAll(),
 		Devices:          deviceMappings,
 		CapAdd:           stringutils.NewStrSlice(flCapAdd.GetAll()...),
 		CapDrop:          stringutils.NewStrSlice(flCapDrop.GetAll()...),

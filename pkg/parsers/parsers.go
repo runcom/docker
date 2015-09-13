@@ -196,3 +196,6 @@ func ParseLink(val string) (string, string, error) {
 	}
 	return arr[0], arr[1], nil
 }
+
+func ParseLinuxNamespace(val string) (map[string]string, error) {
+}

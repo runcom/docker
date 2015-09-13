@@ -19,6 +19,30 @@ type KeyValuePair struct {
 // NetworkMode represents the container network stack.
 type NetworkMode string
 
+type LinuxNS map[string]string
+
+func (ns LinuxNS) New(nss []string) LinuxNS {
+	for _, ns := range nss {
+
+	}
+}
+
+func (ns LinuxNS) Valid() bool {
+	for name, mode := range ns {
+		switch name {
+		case "ipc":
+			return IpcMode(mode).Valid()
+		case "uts":
+			return UTSMode(mode).Valid()
+		case "pid":
+			return PidMode(mode).Valid()
+		default:
+			return false
+		}
+	}
+	return false
+}
+
 // IpcMode represents the container ipc stack.
 type IpcMode string
 

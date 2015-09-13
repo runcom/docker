@@ -342,6 +342,9 @@ func ValidateHost(val string) (string, error) {
 	return host, nil
 }
 
+func ValidateLinuxNamespace(val string) (string, error) {
+}
+
 func doesEnvExist(name string) bool {
 	for _, entry := range os.Environ() {
 		parts := strings.SplitN(entry, "=", 2)
