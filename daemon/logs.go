@@ -22,6 +22,8 @@ type ContainerLogsConfig struct {
 	Tail string
 	// filter logs by returning on those entries after this time
 	Since time.Time
+	// filter logs by returning on those entries before this time
+	Until time.Time
 	// whether or not to show stdout and stderr as well as log entries.
 	UseStdout, UseStderr bool
 	OutStream            io.Writer
@@ -61,6 +63,7 @@ func (daemon *Daemon) ContainerLogs(container *Container, config *ContainerLogsC
 	logrus.Debug("logs: begin stream")
 	readConfig := logger.ReadConfig{
 		Since:  config.Since,
+		Until:  config.Until,
 		Tail:   tailLines,
 		Follow: follow,
 	}

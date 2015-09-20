@@ -94,7 +94,7 @@ func (s *Server) getContainersLogs(ctx context.Context, w http.ResponseWriter, r
 		return fmt.Errorf("Missing parameter")
 	}
 
-	// Validate args here, because we can't return not StatusOK after job.Run() call
+	// Validate args here, because we can't return not StatusOK after stream starts
 	stdout, stderr := boolValue(r, "stdout"), boolValue(r, "stderr")
 	if !(stdout || stderr) {
 		return fmt.Errorf("Bad parameters: you must choose at least one stream")
@@ -107,6 +107,15 @@ func (s *Server) getContainersLogs(ctx context.Context, w http.ResponseWriter, r
 			return err
 		}
 		since = time.Unix(s, 0)
+	}
+
+	var until time.Time
+	if r.Form.Get("until") != "" {
+		u, err := strconv.ParseInt(r.Form.Get("until"), 10, 64)
+		if err != nil {
+			return err
+		}
+		until = time.Unix(u, 0)
 	}
 
 	var closeNotifier <-chan bool
@@ -129,6 +138,7 @@ func (s *Server) getContainersLogs(ctx context.Context, w http.ResponseWriter, r
 		Follow:     boolValue(r, "follow"),
 		Timestamps: boolValue(r, "timestamps"),
 		Since:      since,
+		Until:      until,
 		Tail:       r.Form.Get("tail"),
 		UseStdout:  stdout,
 		UseStderr:  stderr,

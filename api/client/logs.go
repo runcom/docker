@@ -18,6 +18,7 @@ func (cli *DockerCli) CmdLogs(args ...string) error {
 	cmd := Cli.Subcmd("logs", []string{"CONTAINER"}, "Fetch the logs of a container", true)
 	follow := cmd.Bool([]string{"f", "-follow"}, false, "Follow log output")
 	since := cmd.String([]string{"-since"}, "", "Show logs since timestamp")
+	until := cmd.String([]string{"-until"}, "", "Show logs until timestamp")
 	times := cmd.Bool([]string{"t", "-timestamps"}, false, "Show timestamps")
 	tail := cmd.String([]string{"-tail"}, "all", "Number of lines to show from the end of the logs")
 	cmd.Require(flag.Exact, 1)
@@ -40,8 +41,12 @@ func (cli *DockerCli) CmdLogs(args ...string) error {
 	v.Set("stdout", "1")
 	v.Set("stderr", "1")
 
+	ref := time.Now()
 	if *since != "" {
-		v.Set("since", timeutils.GetTimestamp(*since, time.Now()))
+		v.Set("since", timeutils.GetTimestamp(*since, ref)
+	}
+	if *until != "" {
+		v.Set("until", timeutils.GetTimestamp(*until, ref)
 	}
 
 	if *times {
