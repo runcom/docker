@@ -21,6 +21,10 @@ clone git github.com/tchap/go-patricia v2.1.0
 clone git github.com/vdemeester/shakers 3c10293ce22b900c27acad7b28656196fcc2f73b
 clone git golang.org/x/net 3cffabab72adf04f8e3b01c5baf775361837b5fe https://github.com/golang/net.git
 
+# openssl
+clone git github.com/runcom/openssl 5eb4ef3c544ef2bca0a72d7e9832428970bdde86
+clone git github.com/runcom/sslrt v0.0.2
+
 #get libnetwork packages
 clone git github.com/docker/libnetwork 5305ea570b85d61dd0fd261cd7e1680da1884678
 clone git github.com/armon/go-metrics eb0af217e5e9747e41dd5303755356b62d28e3ec

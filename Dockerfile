@@ -47,6 +47,7 @@ RUN apt-get update && apt-get install -y \
 	libcap-dev \
 	libsqlite3-dev \
 	libsystemd-journal-dev \
+	libssl-dev \
 	mercurial \
 	parallel \
 	pkg-config \
