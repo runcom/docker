@@ -145,6 +145,22 @@ func (graph *Graph) restore() error {
 	for _, v := range dir {
 		id := v.Name()
 		if graph.driver.Exists(id) {
+			pth := filepath.Join(graph.root, id, "json")
+			jsonSource, err := os.Open(pth)
+			if err != nil {
+				return err
+			}
+			defer jsonSource.Close()
+			decoder := json.NewDecoder(jsonSource)
+			img := &image.Image{}
+			if err := decoder.Decode(img); err != nil {
+				return err
+			}
+			graph.imageMutex.Lock(img.Parent)
+			if img.Parent != "" {
+				graph.parentRefs[img.Parent]++
+			}
+			graph.imageMutex.Unlock(img.Parent)
 			ids = append(ids, id)
 		}
 	}
@@ -286,9 +302,13 @@ func (graph *Graph) Register(img *image.Image, layerData io.Reader) (err error) 
 	}
 	graph.idIndex.Add(img.ID)
 
-	graph.imageMutex.Lock(img.Parent)
-	graph.parentRefs[img.Parent]++
-	graph.imageMutex.Unlock(img.Parent)
+	if img.Parent == "" {
+		graph.parentRefs[img.ID]++
+	} else {
+		graph.imageMutex.Lock(img.Parent)
+		graph.parentRefs[img.Parent]++
+		graph.imageMutex.Unlock(img.Parent)
+	}
 
 	return nil
 }
@@ -371,12 +391,21 @@ func (graph *Graph) Delete(name string) error {
 	// Remove rootfs data from the driver
 	graph.driver.Remove(id)
 
-	graph.imageMutex.Lock(img.Parent)
-	graph.parentRefs[img.Parent]--
-	if graph.parentRefs[img.Parent] == 0 {
-		delete(graph.parentRefs, img.Parent)
+	if img.Parent == "" {
+		graph.imageMutex.Lock(img.ID)
+		graph.parentRefs[img.ID]--
+		if graph.parentRefs[img.ID] == 0 {
+			delete(graph.parentRefs, img.ID)
+		}
+		graph.imageMutex.Unlock(img.ID)
+	} else {
+		graph.imageMutex.Lock(img.Parent)
+		graph.parentRefs[img.Parent]--
+		if graph.parentRefs[img.Parent] == 0 {
+			delete(graph.parentRefs, img.Parent)
+		}
+		graph.imageMutex.Unlock(img.Parent)
 	}
-	graph.imageMutex.Unlock(img.Parent)
 
 	// Remove the trashed image directory
 	return os.RemoveAll(tmp)
@@ -430,7 +459,7 @@ func (graph *Graph) HasChildren(imgID string) bool {
 	graph.imageMutex.Lock(imgID)
 	count := graph.parentRefs[imgID]
 	graph.imageMutex.Unlock(imgID)
-	return count > 0
+	return count >= 0
 }
 
 // Retain keeps the images and layers that are in the pulling chain so that
