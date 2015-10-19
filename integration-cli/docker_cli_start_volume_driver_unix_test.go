@@ -327,7 +327,7 @@ func (s *DockerExternalVolumeSuite) TestStartExternalVolumeDriverRetryNotImmedia
 		// wait for a retry to occur, then create spec to allow plugin to register
 		time.Sleep(2000 * time.Millisecond)
 		if err := ioutil.WriteFile(specPath, []byte(s.server.URL), 0644); err != nil {
-			c.Fatal(err)
+			errchan <- err
 		}
 	}()
 
