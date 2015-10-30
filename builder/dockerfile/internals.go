@@ -515,6 +515,7 @@ func (b *Builder) create() (*daemon.Container, error) {
 		MemorySwap:   b.MemorySwap,
 		Ulimits:      b.Ulimits,
 		Isolation:    b.Isolation,
+		Binds:        b.Binds,
 	}
 
 	config := *b.runConfig
