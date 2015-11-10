@@ -43,6 +43,7 @@ RUN apt-get update && apt-get install -y \
 	libapparmor-dev \
 	libaudit-dev \
 	libcap-dev \
+	libssl-dev \
 	libsqlite3-dev \
 	libsystemd-journal-dev \
 	pkg-config \

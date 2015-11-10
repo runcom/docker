@@ -3,7 +3,6 @@
 package windows
 
 import (
-	"crypto/sha512"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -21,6 +20,7 @@ import (
 	"github.com/docker/docker/image"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/chrootarchive"
+	"github.com/docker/docker/pkg/crypto/sha512"
 	"github.com/docker/docker/pkg/idtools"
 	"github.com/docker/docker/pkg/ioutils"
 	"github.com/docker/docker/pkg/random"

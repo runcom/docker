@@ -1,10 +1,11 @@
 package ioutils
 
 import (
-	"crypto/sha256"
 	"encoding/hex"
 	"io"
 	"sync"
+
+	"github.com/docker/docker/pkg/crypto/sha256"
 )
 
 type readCloserWrapper struct {

@@ -2,12 +2,12 @@
 package stringid
 
 import (
-	"crypto/rand"
 	"encoding/hex"
 	"io"
 	"regexp"
 	"strconv"
 
+	"github.com/docker/docker/pkg/crypto/rand"
 	"github.com/docker/docker/pkg/random"
 )
 

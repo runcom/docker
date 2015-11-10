@@ -79,6 +79,7 @@ clean() {
 		"$dockerBuildTags"
 		"daemon $dockerBuildTags"
 		"daemon cgo $dockerBuildTags"
+		"openssl cgo $dockerBuildTags"
 		"experimental $dockerBuildTags"
 		"experimental daemon $dockerBuildTags"
 		"experimental daemon cgo $dockerBuildTags"

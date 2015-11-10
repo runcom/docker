@@ -2,13 +2,9 @@ package registry
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"errors"
-	"sync"
-	// this is required for some certificates
-	_ "crypto/sha512"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -18,10 +14,14 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/cliconfig"
+	"github.com/docker/docker/pkg/crypto/sha256"
+	// this is required for some certificates
+	_ "github.com/docker/docker/pkg/crypto/sha512"
 	"github.com/docker/docker/pkg/httputils"
 	"github.com/docker/docker/pkg/ioutils"
 	"github.com/docker/docker/pkg/stringid"

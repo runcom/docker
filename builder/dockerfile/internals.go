@@ -4,7 +4,6 @@ package dockerfile
 // non-contiguous functionality. Please read the comments.
 
 import (
-	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -25,6 +24,7 @@ import (
 	"github.com/docker/docker/daemon"
 	"github.com/docker/docker/image"
 	"github.com/docker/docker/pkg/archive"
+	"github.com/docker/docker/pkg/crypto/sha256"
 	"github.com/docker/docker/pkg/httputils"
 	"github.com/docker/docker/pkg/ioutils"
 	"github.com/docker/docker/pkg/jsonmessage"

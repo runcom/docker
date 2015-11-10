@@ -2,7 +2,6 @@ package archive
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -11,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/docker/docker/pkg/crypto/sha256"
 )
 
 func removeAllPaths(paths ...string) {
