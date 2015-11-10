@@ -73,6 +73,9 @@ build: bundles
 bundles:
 	mkdir bundles
 
+dynbinary: build
+	$(DOCKER_RUN_DOCKER) hack/make.sh dynbinary
+
 cross: build
 	$(DOCKER_RUN_DOCKER) hack/make.sh dynbinary binary cross
 

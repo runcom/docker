@@ -33,6 +33,7 @@ if [ "$IAMSTATIC" == "true" ] && [ "$(go env GOHOSTOS)" == "linux" ] && [ "$DOCK
 		export LDFLAGS_STATIC_DOCKER='-extld='${CC}
 	else
 		export BUILDFLAGS=( "${BUILDFLAGS[@]/pkcs11 /}" ) # we cannot dlopen in pkcs11 in a static binary
+		export BUILDFLAGS=( "${BUILDFLAGS[@]/openssl /}"  ) # we cannot dlopen in openssl in a static binary
 	fi
 fi
 

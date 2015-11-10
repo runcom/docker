@@ -1,11 +1,12 @@
 package ioutils
 
 import (
-	"crypto/sha1"
 	"encoding/hex"
 	"math/rand"
 	"testing"
 	"time"
+
+	"github.com/docker/docker/pkg/crypto/sha1"
 )
 
 func TestBytesPipeRead(t *testing.T) {

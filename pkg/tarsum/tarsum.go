@@ -22,13 +22,14 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto"
-	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"hash"
 	"io"
 	"strings"
+
+	"github.com/docker/docker/pkg/crypto/sha256"
 )
 
 const (

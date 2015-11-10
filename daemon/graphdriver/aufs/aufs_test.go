@@ -3,7 +3,6 @@
 package aufs
 
 import (
-	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/docker/docker/daemon/graphdriver"
 	"github.com/docker/docker/pkg/archive"
+	"github.com/docker/docker/pkg/crypto/sha256"
 	"github.com/docker/docker/pkg/reexec"
 )
 

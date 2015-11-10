@@ -2,7 +2,6 @@ package utils
 
 import (
 	"bufio"
-	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -16,6 +15,7 @@ import (
 	"github.com/docker/distribution/registry/api/errcode"
 	"github.com/docker/docker/dockerversion"
 	"github.com/docker/docker/pkg/archive"
+	"github.com/docker/docker/pkg/crypto/sha1"
 	"github.com/docker/docker/pkg/fileutils"
 	"github.com/docker/docker/pkg/stringid"
 )

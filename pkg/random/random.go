@@ -1,13 +1,14 @@
 package random
 
 import (
-	cryptorand "crypto/rand"
 	"io"
 	"math"
 	"math/big"
 	"math/rand"
 	"sync"
 	"time"
+
+	cryptorand "github.com/docker/docker/pkg/crypto/rand"
 )
 
 // Rand is a global *rand.Rand instance, which initilized with NewSource() source.

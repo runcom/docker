@@ -4,11 +4,6 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
-	"crypto/md5"
-	"crypto/rand"
-	"crypto/sha1"
-	"crypto/sha256"
-	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -16,6 +11,12 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/docker/docker/pkg/crypto/md5"
+	"github.com/docker/docker/pkg/crypto/rand"
+	"github.com/docker/docker/pkg/crypto/sha1"
+	"github.com/docker/docker/pkg/crypto/sha256"
+	"github.com/docker/docker/pkg/crypto/sha512"
 )
 
 type testLayer struct {
