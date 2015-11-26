@@ -103,6 +103,7 @@ import (
 	"unsafe"
 
 	"github.com/coreos/go-systemd/journal"
+	"github.com/coreos/go-systemd/sdjournal"
 	"github.com/docker/docker/daemon/logger"
 )
 
@@ -203,6 +204,10 @@ func (s *journald) readLogs(logWatcher *logger.LogWatcher, config logger.ReadCon
 	var sinceUnixMicro uint64
 	var pipes [2]C.int
 	cursor := ""
+
+	sdjConf := sdjournal.JournalReaderConfig{}
+	sdj := sdjournal.NewJournalReader(sdjConf)
+	_ = sdj
 
 	defer close(logWatcher.Msg)
 	// Get a handle to the journal.
