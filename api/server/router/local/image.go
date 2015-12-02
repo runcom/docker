@@ -479,7 +479,7 @@ func (s *router) postBuild(ctx context.Context, w http.ResponseWriter, r *http.R
 	}
 
 	for _, rt := range repoAndTags {
-		if err := s.daemon.TagImage(rt, imgID); err != nil {
+		if err := s.daemon.TagImage(rt, imgID, true); err != nil {
 			return errf(err)
 		}
 	}
@@ -563,7 +563,7 @@ func (s *router) postImagesTag(ctx context.Context, w http.ResponseWriter, r *ht
 			return err
 		}
 	}
-	if err := s.daemon.TagImage(newTag, vars["name"]); err != nil {
+	if err := s.daemon.TagImage(newTag, vars["name"], true); err != nil {
 		return err
 	}
 	w.WriteHeader(http.StatusCreated)
