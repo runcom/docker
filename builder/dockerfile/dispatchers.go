@@ -566,6 +566,11 @@ func volume(b *Builder, args []string, attributes map[string]bool, original stri
 		return derr.ErrorCodeAtLeastOneArg.WithArgs("VOLUME")
 	}
 
+	// comparing against nil will make sure docker commit works
+	if b.docker != nil && !b.docker.AllowImageVolumes() {
+		fmt.Fprintf(b.Stdout, " ---> [Warning] You won't be able to run the resulting image because VOLUME was defined and the daemon is set not to allow VOLUME(s)\n")
+	}
+
 	if err := b.flags.Parse(); err != nil {
 		return err
 	}
