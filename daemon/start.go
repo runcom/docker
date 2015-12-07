@@ -84,6 +84,16 @@ func (daemon *Daemon) containerStart(container *container.Container) (err error)
 		return derr.ErrorCodeContainerBeingRemoved
 	}
 
+	if container.ImageID != "" { // not FROM scratch
+		img, err := daemon.imageStore.Get(container.ImageID)
+		if err != nil {
+			return err
+		}
+		if len(img.Config.Volumes) > 0 && daemon.configStore.NoImageVolume {
+			return derr.ErrorCodeCantStart.WithArgs(container.ID, "image volumes are not allowed")
+		}
+	}
+
 	// if we encounter an error during start we need to ensure that any other
 	// setup has been cleaned up properly
 	defer func() {

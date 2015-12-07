@@ -110,6 +110,9 @@ func (fi *HashedFileInfo) SetHash(h string) {
 type Docker interface {
 	// TODO: use digest reference instead of name
 
+	// AllowImageVolumes tells whether the daemon allows running images with VOLUMES(s) or not
+	AllowImageVolumes() bool
+
 	// LookupImage looks up a Docker image referenced by `name`.
 	LookupImage(name string) (*image.Image, error)
 	// Pull tells Docker to pull image referenced by `name`.

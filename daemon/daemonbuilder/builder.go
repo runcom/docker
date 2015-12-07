@@ -234,6 +234,11 @@ func (d Docker) Start(c *container.Container) error {
 	return d.Daemon.Start(c)
 }
 
+// AllowImageVolumes proxies daemon.Daemon AllowImageVolumes
+func (d Docker) AllowImageVolumes() bool {
+	return d.Daemon.AllowImageVolumes()
+}
+
 // Following is specific to builder contexts
 
 // DetectContextFromRemoteURL returns a context and in certain cases the name of the dockerfile to be used
