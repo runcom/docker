@@ -169,3 +169,10 @@ func getDefaultRouteMtu() (int, error) {
 func killProcessDirectly(container *container.Container) error {
 	return nil
 }
+
+func (daemon *Daemon) cleanupSecrets(container *container.Container) {
+	return
+}
+func (daemon *Daemon) setupSecretFiles(container *container.Container) error {
+	return nil
+}
