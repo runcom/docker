@@ -42,7 +42,7 @@ docker-daemon - Enable daemon mode
 [**--log-driver**[=*json-file*]]
 [**--log-opt**[=*map[]*]]
 [**--mtu**[=*0*]]
-[**--no-image-volume**[=*false*]]
+[**--no-volumes**[=*false*]]
 [**-p**|**--pidfile**[=*/var/run/docker.pid*]]
 [**--registry-mirror**[=*[]*]]
 [**-s**|**--storage-driver**[=*STORAGE-DRIVER*]]
@@ -190,8 +190,8 @@ unix://[/path/to/socket] to use.
 **--mtu**=*0*
   Set the containers network mtu. Default is `0`.
 
-**--no-image-volume**=*true*|*false*
-    Prevent running containers from images that have been built using the VOLUME instruction. Default is false.
+**--no-volumes**=*true*|*false*
+    Prevent running containers from images that have been built using the VOLUME instruction or running containers with volumes. Default is false.
 
 **-p**, **--pidfile**=""
   Path to use for daemon PID file. Default is `/var/run/docker.pid`

@@ -95,9 +95,6 @@ func (cli *DockerCli) CmdCommit(args ...string) error {
 		return err
 	}
 
-	for _, w := range response.Warnings {
-		fmt.Fprintf(cli.err, "WARNING: %s\n", w)
-	}
 	fmt.Fprintln(cli.out, response.ID)
 	return nil
 }

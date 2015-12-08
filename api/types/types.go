@@ -45,8 +45,7 @@ type ContainerWaitResponse struct {
 // ContainerCommitResponse contains response of Remote API:
 // POST "/commit?container="+containerID
 type ContainerCommitResponse struct {
-	ID       string `json:"Id"`
-	Warnings []string
+	ID string `json:"Id"`
 }
 
 // ContainerChange contains response of Remote API:
