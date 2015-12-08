@@ -1943,4 +1943,13 @@ func (s *DockerDaemonSuite) TestDaemonStartWithNoImageVolumeFalse(c *check.C) {
 	out, err = s.d.Cmd("run", imgName)
 	c.Assert(err, checker.IsNil, check.Commentf(out))
 	c.Assert(out, checker.Not(checker.Contains), "image volumes are not allowed")
+
+	// ensure docker commit doesn't show a warning if there's a VOLUME in changes
+	testCommitName := "commit-with-volume"
+	_, err = s.d.Cmd("run", "--name", testCommitName, "busybox", "true")
+	c.Assert(err, check.IsNil)
+	out, err = s.d.Cmd("commit", "--change", "VOLUME test", testCommitName, testCommitName+"-commit")
+	c.Assert(err, check.IsNil)
+	expected = "WARNING: You won't be able to run the resulting image because VOLUME was defined and the daemon is set not to allow VOLUME(s)"
+	c.Assert(out, checker.Not(checker.Contains), expected)
 }
