@@ -105,4 +105,6 @@ func (r *router) initRoutes() {
 		// DELETE
 		NewDeleteRoute("/images/{name:.*}", r.deleteImages),
 	}
+
+	addExperimentalRoutes(r)
 }
