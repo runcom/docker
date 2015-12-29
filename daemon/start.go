@@ -5,6 +5,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/container"
+	"github.com/docker/docker/daemon/execdriver"
 	derr "github.com/docker/docker/errors"
 	"github.com/docker/docker/runconfig"
 	containertypes "github.com/docker/engine-api/types/container"
@@ -140,6 +141,16 @@ func (daemon *Daemon) containerStart(container *container.Container) (err error)
 	}
 	mounts = append(mounts, container.IpcMounts()...)
 	mounts = append(mounts, container.TmpfsMounts()...)
+
+	m, err := container.SecretMount()
+	if err != nil {
+		return err
+	}
+	// SecretMount() returns m == nil && err == nil
+	// we check m before appending and dereferencing it
+	if m != nil {
+		mounts = append([]execdriver.Mount{*m}, mounts...)
+	}
 
 	container.Command.Mounts = mounts
 
