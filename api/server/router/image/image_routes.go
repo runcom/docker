@@ -213,13 +213,14 @@ func (s *imageRouter) postImagesPush(ctx context.Context, w http.ResponseWriter,
 	if err != nil {
 		return err
 	}
+	force := httputils.BoolValue(r, "force")
 
 	output := ioutils.NewWriteFlusher(w)
 	defer output.Close()
 
 	w.Header().Set("Content-Type", "application/json")
 
-	if err := s.daemon.PushImage(ref, metaHeaders, authConfigs, output); err != nil {
+	if err := s.daemon.PushImage(ref, metaHeaders, authConfigs, force, output); err != nil {
 		if !output.Flushed() {
 			return err
 		}
