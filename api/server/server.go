@@ -9,6 +9,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/server/httputils"
 	"github.com/docker/docker/api/server/router"
+	"github.com/docker/docker/daemon"
 	"github.com/docker/docker/pkg/authorization"
 	"github.com/docker/docker/utils"
 	"github.com/gorilla/mux"
@@ -37,6 +38,7 @@ type Server struct {
 	routers       []router.Router
 	authZPlugins  []authorization.Plugin
 	routerSwapper *routerSwapper
+	daemon        *daemon.Daemon
 }
 
 // New returns a new instance of the server based on the specified configuration.
@@ -67,6 +69,11 @@ func (s *Server) Close() {
 			logrus.Error(err)
 		}
 	}
+}
+
+// SetDaemon initializes the daemon field
+func (s *Server) SetDaemon(daemon *daemon.Daemon) {
+	s.daemon = daemon
 }
 
 // serveAPI loops through all initialized servers and spawns goroutine
