@@ -62,7 +62,12 @@ type v2Puller struct {
 
 func (p *v2Puller) Pull(ctx context.Context, ref reference.Named) (err error) {
 	// TODO(tiborvass): was ReceiveTimeout
-	p.repo, p.confirmedV2, err = NewV2Repository(ctx, p.repoInfo, p.endpoint, p.config.MetaHeaders, p.config.AuthConfig, "pull")
+	repoInfo, err := registry.ParseRepositoryInfo(ref)
+	if err != nil {
+		return err
+	}
+	authConfig := registry.ResolveAuthConfig(p.config.AuthConfigs, repoInfo.Index)
+	p.repo, p.confirmedV2, err = NewV2Repository(ctx, p.repoInfo, p.endpoint, p.config.MetaHeaders, &authConfig, "pull")
 	if err != nil {
 		logrus.Warnf("Error getting v2 registry: %v", err)
 		return err
@@ -373,7 +378,7 @@ func (p *v2Puller) pullV2Tag(ctx context.Context, ref reference.Named) (tagUpdat
 	p.confirmedV2 = true
 
 	logrus.Debugf("Pulling ref from V2 registry: %s", reference.FamiliarString(ref))
-	progress.Message(p.config.ProgressOutput, tagOrDigest, "Pulling from "+reference.FamiliarName(p.repo.Named()))
+	progress.Message(p.config.ProgressOutput, tagOrDigest, "Pulling from "+p.repo.Named().String())
 
 	var (
 		id             digest.Digest
