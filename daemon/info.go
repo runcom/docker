@@ -74,6 +74,15 @@ func (daemon *Daemon) SystemInfo() (*types.Info, error) {
 		}
 	})
 
+	registries := []types.Registry{}
+	for _, r := range registry.DefaultRegistries {
+		registry := types.Registry{Name: r}
+		if ic, ok := daemon.RegistryService.Config.IndexConfigs[r]; ok {
+			registry.Secure = ic.Secure
+		}
+		registries = append(registries, registry)
+	}
+
 	v := &types.Info{
 		ID:                 daemon.ID,
 		Containers:         int(cRunning + cPaused + cStopped),
@@ -96,7 +105,8 @@ func (daemon *Daemon) SystemInfo() (*types.Info, error) {
 		NEventsListener:    daemon.EventsService.SubscribersCount(),
 		KernelVersion:      kernelVersion,
 		OperatingSystem:    operatingSystem,
-		IndexServerAddress: registry.IndexServer,
+		IndexServerAddress: registry.IndexServerAddress(),
+		IndexServerName:    registry.IndexServerName(),
 		OSType:             platform.OSType,
 		Architecture:       platform.Architecture,
 		RegistryConfig:     daemon.RegistryService.Config,
@@ -112,6 +122,7 @@ func (daemon *Daemon) SystemInfo() (*types.Info, error) {
 		HTTPSProxy:         sockets.GetProxyEnv("https_proxy"),
 		NoProxy:            sockets.GetProxyEnv("no_proxy"),
 		PkgVersion:         packageVersion,
+		Registries:         registries,
 	}
 
 	// TODO Windows. Refactor this more once sysinfo is refactored into

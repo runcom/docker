@@ -38,7 +38,7 @@ type importExportBackend interface {
 }
 
 type registryBackend interface {
-	PullImage(ref reference.Named, metaHeaders map[string][]string, authConfig *types.AuthConfig, outStream io.Writer) error
-	PushImage(ref reference.Named, metaHeaders map[string][]string, authConfig *types.AuthConfig, outStream io.Writer) error
-	SearchRegistryForImages(term string, authConfig *types.AuthConfig, metaHeaders map[string][]string) (*registry.SearchResults, error)
+	PullImage(ref reference.Named, metaHeaders map[string][]string, authConfigs map[string]types.AuthConfig, outStream io.Writer) error
+	PushImage(ref reference.Named, metaHeaders map[string][]string, authConfigs map[string]types.AuthConfig, outStream io.Writer) error
+	SearchRegistryForImages(term string, authConfigs map[string]types.AuthConfig, metaHeaders map[string][]string, noIndex bool) ([]registry.SearchResultExt, error)
 }
