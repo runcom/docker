@@ -2,4 +2,4 @@
 
 package credentials
 
-const defaultCredentialsStore = ""
+var defaultCredentialsStore = nil

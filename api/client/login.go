@@ -163,7 +163,7 @@ func eraseCredentials(c *cliconfig.ConfigFile, serverAddress string) error {
 // loadCredentialsStore initializes a new credentials store based
 // in the settings provided in the configuration file.
 func loadCredentialsStore(c *cliconfig.ConfigFile) credentials.Store {
-	if c.CredentialsStore != "" {
+	if c.CredentialsStore != nil {
 		return credentials.NewNativeStore(c)
 	}
 	return credentials.NewFileStore(c)

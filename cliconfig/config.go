@@ -46,6 +46,18 @@ func SetConfigDir(dir string) {
 	configDir = dir
 }
 
+type CredentialsStore struct {
+	Name string
+	Opts map[string]string
+}
+
+func NewCredentialsStore(name string, opts map[string]string) *CredentialsStore {
+	return &CredentialsStore{
+		Name: name,
+		Opts: opts,
+	}
+}
+
 // ConfigFile ~/.docker/config.json file info
 type ConfigFile struct {
 	AuthConfigs      map[string]types.AuthConfig `json:"auths"`
@@ -53,7 +65,7 @@ type ConfigFile struct {
 	PsFormat         string                      `json:"psFormat,omitempty"`
 	ImagesFormat     string                      `json:"imagesFormat,omitempty"`
 	DetachKeys       string                      `json:"detachKeys,omitempty"`
-	CredentialsStore string                      `json:"credsStore,omitempty"`
+	CredentialsStore *CredentialsStore           `json:"credsStore,omitempty"`
 	filename         string                      // Note: not serialized - for internal use only
 }
 
@@ -126,7 +138,7 @@ func (configFile *ConfigFile) LoadFromReader(configData io.Reader) error {
 // ContainsAuth returns whether there is authentication configured
 // in this file or not.
 func (configFile *ConfigFile) ContainsAuth() bool {
-	return configFile.CredentialsStore != "" ||
+	return configFile.CredentialsStore != nil ||
 		(configFile.AuthConfigs != nil && len(configFile.AuthConfigs) > 0)
 }
 

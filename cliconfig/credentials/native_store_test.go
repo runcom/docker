@@ -84,7 +84,7 @@ func mockCommandFn(args ...string) command {
 
 func TestNativeStoreAddCredentials(t *testing.T) {
 	f := newConfigFile(make(map[string]types.AuthConfig))
-	f.CredentialsStore = "mock"
+	f.CredentialsStore = cliconfig.NewCredentialsStore("mock", nil)
 
 	s := &nativeStore{
 		commandFn: mockCommandFn,
@@ -125,7 +125,7 @@ func TestNativeStoreAddCredentials(t *testing.T) {
 
 func TestNativeStoreAddInvalidCredentials(t *testing.T) {
 	f := newConfigFile(make(map[string]types.AuthConfig))
-	f.CredentialsStore = "mock"
+	f.CredentialsStore = cliconfig.NewCredentialsStore("mock", nil)
 
 	s := &nativeStore{
 		commandFn: mockCommandFn,
@@ -157,7 +157,7 @@ func TestNativeStoreGet(t *testing.T) {
 			Email: "foo@example.com",
 		},
 	})
-	f.CredentialsStore = "mock"
+	f.CredentialsStore = cliconfig.NewCredentialsStore("mock", nil)
 
 	s := &nativeStore{
 		commandFn: mockCommandFn,
@@ -188,7 +188,7 @@ func TestNativeStoreGetAll(t *testing.T) {
 			Email: "foo@example2.com",
 		},
 	})
-	f.CredentialsStore = "mock"
+	f.CredentialsStore = cliconfig.NewCredentialsStore("mock", nil)
 
 	s := &nativeStore{
 		commandFn: mockCommandFn,
@@ -229,7 +229,7 @@ func TestNativeStoreGetMissingCredentials(t *testing.T) {
 			Email: "foo@example.com",
 		},
 	})
-	f.CredentialsStore = "mock"
+	f.CredentialsStore = cliconfig.NewCredentialsStore("mock", nil)
 
 	s := &nativeStore{
 		commandFn: mockCommandFn,
@@ -248,7 +248,7 @@ func TestNativeStoreGetInvalidAddress(t *testing.T) {
 			Email: "foo@example.com",
 		},
 	})
-	f.CredentialsStore = "mock"
+	f.CredentialsStore = cliconfig.NewCredentialsStore("mock", nil)
 
 	s := &nativeStore{
 		commandFn: mockCommandFn,
@@ -270,7 +270,7 @@ func TestNativeStoreErase(t *testing.T) {
 			Email: "foo@example.com",
 		},
 	})
-	f.CredentialsStore = "mock"
+	f.CredentialsStore = cliconfig.NewCredentialsStore("mock", nil)
 
 	s := &nativeStore{
 		commandFn: mockCommandFn,
@@ -292,7 +292,7 @@ func TestNativeStoreEraseInvalidAddress(t *testing.T) {
 			Email: "foo@example.com",
 		},
 	})
-	f.CredentialsStore = "mock"
+	f.CredentialsStore = cliconfig.NewCredentialsStore("mock", nil)
 
 	s := &nativeStore{
 		commandFn: mockCommandFn,
@@ -307,3 +307,5 @@ func TestNativeStoreEraseInvalidAddress(t *testing.T) {
 		t.Fatalf("expected `error erasing credentials`, got %v", err)
 	}
 }
+
+// TODO(runcom): add unit tests for store with options

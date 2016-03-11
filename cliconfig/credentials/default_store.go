@@ -9,13 +9,13 @@ import (
 // DetectDefaultStore sets the default credentials store
 // if the host includes the default store helper program.
 func DetectDefaultStore(c *cliconfig.ConfigFile) {
-	if c.CredentialsStore != "" {
+	if c.CredentialsStore != nil {
 		// user defined
 		return
 	}
 
-	if defaultCredentialsStore != "" {
-		if _, err := exec.LookPath(remoteCredentialsPrefix + defaultCredentialsStore); err == nil {
+	if defaultCredentialsStore != nil {
+		if _, err := exec.LookPath(remoteCredentialsPrefix + defaultCredentialsStore.Name); err == nil {
 			c.CredentialsStore = defaultCredentialsStore
 		}
 	}

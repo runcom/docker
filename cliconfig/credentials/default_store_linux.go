@@ -1,3 +1,7 @@
 package credentials
 
-const defaultCredentialsStore = "secretservice"
+import (
+	"github.com/docker/docker/cliconfig"
+)
+
+var defaultCredentialsStore = cliconfig.NewCredentialsStore("secretservice", nil)

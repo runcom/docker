@@ -27,9 +27,10 @@ type command interface {
 
 // credentialsRequest holds information shared between docker and a remote credential store.
 type credentialsRequest struct {
-	ServerURL string
-	Username  string
-	Password  string
+	ServerURL    string
+	Username     string
+	Password     string
+	StoreOptions map[string]string
 }
 
 // credentialsGetResponse is the information serialized from a remote store
@@ -44,6 +45,7 @@ type credentialsGetResponse struct {
 // It piggybacks into a file store to keep users' emails.
 type nativeStore struct {
 	commandFn func(args ...string) command
+	opts      map[string]string
 	fileStore Store
 }
 
@@ -51,7 +53,8 @@ type nativeStore struct {
 // uses a remote helper program to manage credentials.
 func NewNativeStore(file *cliconfig.ConfigFile) Store {
 	return &nativeStore{
-		commandFn: shellCommandFn(file.CredentialsStore),
+		commandFn: shellCommandFn(file.CredentialsStore.Name),
+		opts:      file.CredentialsStore.Opts,
 		fileStore: NewFileStore(file),
 	}
 }
@@ -111,9 +114,10 @@ func (c *nativeStore) Store(authConfig types.AuthConfig) error {
 func (c *nativeStore) storeCredentialsInStore(config types.AuthConfig) error {
 	cmd := c.commandFn("store")
 	creds := &credentialsRequest{
-		ServerURL: config.ServerAddress,
-		Username:  config.Username,
-		Password:  config.Password,
+		ServerURL:    config.ServerAddress,
+		Username:     config.Username,
+		Password:     config.Password,
+		StoreOptions: c.opts,
 	}
 
 	buffer := new(bytes.Buffer)
