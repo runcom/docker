@@ -356,7 +356,12 @@
 				"waitid",
 				"waitpid",
 				"write",
-				"writev"
+				"writev",
+				"mount",
+				"umount2",
+				"reboot",
+				"name_to_handle_at",
+				"unshare"
 			],
 			"action": "SCMP_ACT_ALLOW",
 			"args": [],
