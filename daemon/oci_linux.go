@@ -14,6 +14,7 @@ import (
 	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/container"
 	"github.com/docker/docker/daemon/caps"
+	"github.com/docker/docker/daemon/dockerhooks"
 	"github.com/docker/docker/libcontainerd"
 	"github.com/docker/docker/oci"
 	"github.com/docker/docker/pkg/idtools"
@@ -705,6 +706,13 @@ func (daemon *Daemon) createSpec(c *container.Container) (*libcontainerd.Spec, e
 			}
 		}
 	}
+
+	jsonPath, err := c.ConfigPath()
+	if err != nil {
+		return nil, err
+	}
+
+	s.Hooks = dockerhooks.Generate(s.Hooks, jsonPath)
 
 	if apparmor.IsEnabled() {
 		appArmorProfile := "docker-default"
