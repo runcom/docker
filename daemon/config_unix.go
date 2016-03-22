@@ -38,6 +38,7 @@ type Config struct {
 	InitPath             string                   `json:"init-path,omitempty"`
 	SeccompProfile       string                   `json:"seccomp-profile,omitempty"`
 	ShmSize              opts.MemBytes            `json:"default-shm-size,omitempty"`
+	EnableSecrets        bool                     `json:"enable-secrets"`
 }
 
 // bridgeConfig stores all the bridge driver specific
@@ -95,6 +96,7 @@ func (config *Config) InstallFlags(flags *pflag.FlagSet) {
 	flags.Int64Var(&config.CPURealtimeRuntime, "cpu-rt-runtime", 0, "Limit the CPU real-time runtime in microseconds")
 	flags.StringVar(&config.SeccompProfile, "seccomp-profile", "", "Path to seccomp profile")
 	flags.Var(&config.ShmSize, "default-shm-size", "Default shm size for containers")
+	flags.BoolVar(&config.EnableSecrets, "enable-secrets", true, "Enable Secrets")
 
 	config.attachExperimentalFlags(flags)
 }
