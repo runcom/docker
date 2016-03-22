@@ -209,6 +209,7 @@ type Version struct {
 	KernelVersion string `json:",omitempty"`
 	Experimental  bool   `json:",omitempty"`
 	BuildTime     string `json:",omitempty"`
+	PkgVersion    string `json:",omitempty"`
 }
 
 // Info contains response of Remote API:
@@ -243,6 +244,7 @@ type Info struct {
 	CgroupDriver       string
 	NEventsListener    int
 	KernelVersion      string
+	PkgVersion         string
 	OperatingSystem    string
 	OSType             string
 	Architecture       string
