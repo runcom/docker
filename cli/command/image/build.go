@@ -39,6 +39,7 @@ type buildOptions struct {
 	tags           opts.ListOpts
 	labels         []string
 	buildArgs      opts.ListOpts
+	buildVolumes   opts.ListOpts
 	ulimits        *runconfigopts.UlimitOpt
 	memory         string
 	memorySwap     string
@@ -62,9 +63,10 @@ type buildOptions struct {
 func NewBuildCommand(dockerCli *command.DockerCli) *cobra.Command {
 	ulimits := make(map[string]*units.Ulimit)
 	options := buildOptions{
-		tags:      opts.NewListOpts(validateTag),
-		buildArgs: opts.NewListOpts(runconfigopts.ValidateArg),
-		ulimits:   runconfigopts.NewUlimitOpt(&ulimits),
+		tags:         opts.NewListOpts(validateTag),
+		buildArgs:    opts.NewListOpts(runconfigopts.ValidateArg),
+		buildVolumes: opts.NewListOpts(nil),
+		ulimits:      runconfigopts.NewUlimitOpt(&ulimits),
 	}
 
 	cmd := &cobra.Command{
@@ -100,6 +102,7 @@ func NewBuildCommand(dockerCli *command.DockerCli) *cobra.Command {
 	flags.BoolVarP(&options.quiet, "quiet", "q", false, "Suppress the build output and print image ID on success")
 	flags.BoolVar(&options.pull, "pull", false, "Always attempt to pull a newer version of the image")
 	flags.StringSliceVar(&options.cacheFrom, "cache-from", []string{}, "Images to consider as cache sources")
+	flags.VarP(&options.buildVolumes, "volume", "v", "Set build-time bind mounts")
 
 	command.AddTrustedFlags(flags, true)
 
@@ -269,6 +272,21 @@ func runBuild(dockerCli *command.DockerCli, options buildOptions) error {
 	}
 
 	authConfig, _ := dockerCli.CredentialsStore().GetAll()
+	var binds []string
+	// add any bind targets to the list of container volumes
+	for bind := range options.buildVolumes.GetMap() {
+		if arr := runconfigopts.VolumeSplitN(bind, 2); len(arr) > 1 {
+			// after creating the bind mount we want to delete it from the flBuildVolumes values because
+			// we do not want bind mounts being committed to image configs
+			binds = append(binds, bind)
+			options.buildVolumes.Delete(bind)
+		}
+	}
+
+	if len(options.buildVolumes.GetMap()) > 0 {
+		return fmt.Errorf("Volumes aren't supported in docker build. Please use only bind mounts.")
+	}
+
 	buildOptions := types.ImageBuildOptions{
 		Memory:         memory,
 		MemorySwap:     memorySwap,
@@ -292,6 +310,7 @@ func runBuild(dockerCli *command.DockerCli, options buildOptions) error {
 		AuthConfigs:    authConfig,
 		Labels:         runconfigopts.ConvertKVStringsToMap(options.labels),
 		CacheFrom:      options.cacheFrom,
+		Binds:          binds,
 	}
 
 	response, err := dockerCli.Client().ImageBuild(ctx, body, buildOptions)
