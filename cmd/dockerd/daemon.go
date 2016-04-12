@@ -32,7 +32,6 @@ import (
 	"github.com/docker/docker/opts"
 	"github.com/docker/docker/pkg/authorization"
 	"github.com/docker/docker/pkg/jsonlog"
-	"github.com/docker/docker/pkg/listeners"
 	flag "github.com/docker/docker/pkg/mflag"
 	"github.com/docker/docker/pkg/pidfile"
 	"github.com/docker/docker/pkg/signal"
@@ -228,7 +227,7 @@ func (cli *DaemonCli) start() (err error) {
 		if proto == "tcp" && (serverConfig.TLSConfig == nil || serverConfig.TLSConfig.ClientAuth != tls.RequireAndVerifyClientCert) {
 			logrus.Warn("[!] DON'T BIND ON ANY IP ADDRESS WITHOUT setting -tlsverify IF YOU DON'T KNOW WHAT YOU'RE DOING [!]")
 		}
-		l, err := listeners.Init(proto, addr, serverConfig.SocketGroup, serverConfig.TLSConfig)
+		l, err := initListeners(proto, addr, serverConfig.SocketGroup, serverConfig.TLSConfig)
 		if err != nil {
 			return err
 		}

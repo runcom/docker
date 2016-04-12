@@ -3,6 +3,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"os"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/docker/docker/daemon"
 	"github.com/docker/docker/libcontainerd"
+	"github.com/docker/docker/pkg/listeners"
 	"github.com/docker/docker/pkg/system"
 	"github.com/docker/libnetwork/portallocator"
 )
@@ -110,4 +112,23 @@ func allocateDaemonPort(addr string) error {
 
 // notifyShutdown is called after the daemon shuts down but before the process exits.
 func notifyShutdown(err error) {
+}
+
+func initListeners(proto, addr, socketGroup string, tlsConfig *tls.Config) ([]net.Listener, error) {
+	ls, err := listeners.Init(proto, addr, socketGroup, tlsConfig)
+	if err != nil {
+		return nil, err
+	}
+	invalidHostHeaderHack := os.Getenv("DOCKER_HOST_HEADER_COMPAT") != ""
+	if invalidHostHeaderHack {
+		switch proto {
+		case "unix":
+			ls[0] = &MalformedHostHeaderOverride{ls[0]}
+		case "fd":
+			for i := range ls {
+				ls[i] = &MalformedHostHeaderOverride{ls[i]}
+			}
+		}
+	}
+	return ls, nil
 }

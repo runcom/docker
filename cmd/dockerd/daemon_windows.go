@@ -1,12 +1,15 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
+	"net"
 	"os"
 	"syscall"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/libcontainerd"
+	"github.com/docker/docker/pkg/listeners"
 	"github.com/docker/docker/pkg/system"
 )
 
@@ -74,4 +77,12 @@ func (cli *DaemonCli) getLibcontainerdRoot() string {
 
 func allocateDaemonPort(addr string) error {
 	return nil
+}
+
+func initListeners(proto, addr, socketGroup string, tlsConfig *tls.Config) ([]net.Listener, error) {
+	ls, err := listeners.Init(proto, addr, socketGroup, tlsConfig)
+	if err != nil {
+		return nil, err
+	}
+	return ls, nil
 }

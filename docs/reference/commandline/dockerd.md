@@ -847,6 +847,17 @@ set like this:
     export DOCKER_TMPDIR=/mnt/disk2/tmp
     /usr/local/bin/dockerd -D -g /var/lib/docker -H unix:// > /var/lib/docker-machine/docker.log 2>&1
 
+Docker clients built with golang < 1.6 cannot talk to Docker daemons built
+with golang >= 1.6. Docker supports overcoming this issue via a Docker daemon
+environment variable. In case you are seeing this error when contacting the
+daemon:
+
+    Error response from daemon: 400 Bad Request: malformed Host header
+
+The `DOCKER_HOST_HEADER_COMPAT` can be set like this:
+
+    DOCKER_HOST_HEADER_COMPAT=1 /usr/local/bin/dockerd ...
+
 
 ## Default cgroup parent
 
