@@ -166,7 +166,12 @@ drain:
 			}
 			// Send the log message.
 			cid := s.vars["CONTAINER_ID_FULL"]
-			logWatcher.Msg <- &logger.Message{ContainerID: cid, Line: line, Source: source, Timestamp: timestamp}
+			logWatcher.Msg <- &logger.Message{
+				ContainerID: cid,
+				Line:        line,
+				Source:      source,
+				Timestamp:   timestamp.In(time.UTC),
+			}
 		}
 		// If we're at the end of the journal, we're done (for now).
 		if C.sd_journal_next(j) <= 0 {
