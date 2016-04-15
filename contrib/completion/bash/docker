@@ -1606,6 +1606,7 @@ _docker_run() {
 		--shm-size
 		--stop-signal
 		--tmpfs
+		--sysctl
 		--ulimit
 		--user -u
 		--uts
