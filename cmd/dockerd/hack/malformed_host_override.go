@@ -1,11 +1,8 @@
 // +build !windows
 
-package main
+package hack
 
-import (
-	"net"
-	"strings"
-)
+import "net"
 
 // MalformedHostHeaderOverride is a wrapper to be able
 // to overcome the 400 Bad request coming from old docker
@@ -21,6 +18,8 @@ type MalformedHostHeaderOverrideConn struct {
 	net.Conn
 	first bool
 }
+
+var closeConnHeader = []byte("Connection: close\r\n")
 
 // Read reads the first *read* request from http.Server to inspect
 // the Host header. If the Host starts with / then we're talking to
@@ -43,28 +42,48 @@ func (l *MalformedHostHeaderOverrideConn) Read(b []byte) (n int, err error) {
 		if err != nil {
 			return c, err
 		}
-		parts := strings.Split(string(b[:c]), "\n")
-		head := []string{parts[0]}
-		if len(parts) > 0 {
-			if !strings.HasPrefix(parts[1], "Host: /") {
-				// we're talking to a newer docker clients if Host doesn't start
-				// with a slash
-				head = parts
-			} else {
-				// we're now talking to an old docker client
-				// Sanitize Host header
-				head = append(head, "Host: \r")
-				// Inject `Connection: close` to ensure we don't reuse this connection
-				head = append(head, "Connection: close\r")
-				// append the remaining headers
-				if len(parts) > 1 {
-					head = append(head, parts[2:]...)
+
+		var start, end int
+		for i, bb := range b[:c] {
+			if bb != '\n' {
+				continue
+			}
+			if b[i+1] != 'H' {
+				continue
+			}
+			if b[i+2] != 'o' {
+				continue
+			}
+			if b[i+3] != 's' {
+				continue
+			}
+			if b[i+4] != 't' {
+				continue
+			}
+			if b[i+5] != ':' {
+				continue
+			}
+			if b[i+6] != ' ' {
+				continue
+			}
+			if b[i+7] != '/' {
+				continue
+			}
+			start = i + 7
+			// now find where the value ends
+			for ii, bbb := range b[start:c] {
+				if bbb == '\n' {
+					end = start + ii
+					break
 				}
 			}
+			// strip the value of the host header
+			b = append(b[:start], b[end:]...)
+			// Inject `Connection: close` to ensure we don't reuse this connection
+			b = append(b[:end+1], closeConnHeader...)
+			break
 		}
-		newHead := strings.Join(head, "\n")
-		copy(b, []byte(newHead))
-		return len(newHead), nil
+		return c, nil
 	}
 	return l.Conn.Read(b)
 }

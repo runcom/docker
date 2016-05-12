@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"syscall"
 
+	"github.com/docker/docker/cmd/dockerd/hack"
 	"github.com/docker/docker/daemon"
 	"github.com/docker/docker/libcontainerd"
 	"github.com/docker/docker/pkg/listeners"
@@ -123,10 +124,10 @@ func initListeners(proto, addr, socketGroup string, tlsConfig *tls.Config) ([]ne
 	if invalidHostHeaderHack {
 		switch proto {
 		case "unix":
-			ls[0] = &MalformedHostHeaderOverride{ls[0]}
+			ls[0] = &hack.MalformedHostHeaderOverride{ls[0]}
 		case "fd":
 			for i := range ls {
-				ls[i] = &MalformedHostHeaderOverride{ls[i]}
+				ls[i] = &hack.MalformedHostHeaderOverride{ls[i]}
 			}
 		}
 	}
