@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/docker/docker/api/server/hack"
 	"github.com/docker/go-connections/sockets"
 	"github.com/docker/libnetwork/portallocator"
 
@@ -29,6 +30,9 @@ func (s *Server) newServer(proto, addr string) ([]*HTTPServer, error) {
 		if err != nil {
 			return nil, err
 		}
+		for i, l := range ls {
+			ls[i] = &hack.MalformedHostHeaderOverride{l}
+		}
 	case "tcp":
 		l, err := s.initTCPSocket(addr)
 		if err != nil {
@@ -40,6 +44,7 @@ func (s *Server) newServer(proto, addr string) ([]*HTTPServer, error) {
 		if err != nil {
 			return nil, fmt.Errorf("can't create unix socket %s: %v", addr, err)
 		}
+		l = &hack.MalformedHostHeaderOverride{l}
 		ls = append(ls, l)
 	default:
 		return nil, fmt.Errorf("Invalid protocol format: %q", proto)
