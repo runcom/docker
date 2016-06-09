@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/docker/distribution"
 	"github.com/docker/distribution/digest"
 )
@@ -126,6 +127,7 @@ func storeLayer(tx MetadataTransaction, layer *roLayer) error {
 	if err := tx.SetCacheID(layer.cacheID); err != nil {
 		return err
 	}
+	logrus.Debugf("runcom %v", layer.descriptor)
 	// Do not store empty descriptors
 	if layer.descriptor.Digest != "" {
 		if err := tx.SetDescriptor(layer.descriptor); err != nil {

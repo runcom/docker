@@ -134,7 +134,8 @@ type v2LayerDescriptor struct {
 	V2MetadataService *metadata.V2MetadataService
 	tmpFile           *os.File
 	verifier          digest.Verifier
-	src               distribution.Descriptor
+	// TODO(runcom): change this to "d" and incorporate "digest" from above?
+	src distribution.Descriptor
 }
 
 func (ld *v2LayerDescriptor) Key() string {
@@ -296,10 +297,8 @@ func (ld *v2LayerDescriptor) Download(ctx context.Context, progressOutput progre
 var _ distribution.Describable = &v2LayerDescriptor{}
 
 func (ld *v2LayerDescriptor) Descriptor() distribution.Descriptor {
-	if ld.src.MediaType == schema2.MediaTypeForeignLayer {
-		return ld.src
-	}
-	return distribution.Descriptor{}
+	logrus.Debug("here")
+	return ld.src
 }
 
 func (ld *v2LayerDescriptor) open(ctx context.Context) (distribution.ReadSeekCloser, error) {
@@ -547,6 +546,8 @@ func (p *v2Puller) pullSchema2(ctx context.Context, ref reference.Named, mfst *s
 			V2MetadataService: p.V2MetadataService,
 			src:               d,
 		}
+
+		logrus.Debugf("runcom %v", d)
 
 		descriptors = append(descriptors, layerDescriptor)
 	}

@@ -125,6 +125,8 @@ func (ldm *LayerDownloadManager) Download(ctx context.Context, initialRootFS ima
 			}
 		}
 
+		logrus.Debugf("runcom %v", descriptor)
+
 		// Does this layer have the same data as a previous layer in
 		// the stack? If so, avoid downloading it more than once.
 		var topDownloadUncasted Transfer
@@ -323,6 +325,8 @@ func (ldm *LayerDownloadManager) makeDownloadFunc(descriptor DownloadDescriptor,
 			if fs, ok := descriptor.(distribution.Describable); ok {
 				src = fs.Descriptor()
 			}
+			logrus.Debugf("digest %v", src.Digest)
+			logrus.Debugf("runcom %v", src)
 			d.layer, err = d.layerStore.Register(inflatedLayerData, parentLayer, src)
 			if err != nil {
 				select {
