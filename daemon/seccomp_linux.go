@@ -30,7 +30,7 @@ func setSeccomp(daemon *Daemon, rs *specs.Spec, c *container.Container) error {
 		return nil
 	}
 	if c.SeccompProfile != "" {
-		profile, err = seccomp.LoadProfile(c.SeccompProfile)
+		profile, err = seccomp.LoadProfile(c.SeccompProfile, rs)
 		if err != nil {
 			return err
 		}

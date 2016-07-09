@@ -8,26 +8,27 @@ import (
 
 	"github.com/docker/engine-api/types"
 	"github.com/opencontainers/specs/specs-go"
+	libseccomp "github.com/seccomp/libseccomp-golang"
 )
 
 //go:generate go run -tags 'seccomp' generate.go
 
 // GetDefaultProfile returns the default seccomp profile.
 func GetDefaultProfile(rs *specs.Spec) (*specs.Seccomp, error) {
-	return setupSeccomp(DefaultProfile(rs))
+	return setupSeccomp(DefaultProfile(rs), rs)
 }
 
 // LoadProfile takes a file path and decodes the seccomp profile.
-func LoadProfile(body string) (*specs.Seccomp, error) {
+func LoadProfile(body string, rs *specs.Spec) (*specs.Seccomp, error) {
 	var config types.Seccomp
 	if err := json.Unmarshal([]byte(body), &config); err != nil {
 		return nil, fmt.Errorf("Decoding seccomp profile failed: %v", err)
 	}
 
-	return setupSeccomp(&config)
+	return setupSeccomp(&config, rs)
 }
 
-func setupSeccomp(config *types.Seccomp) (newConfig *specs.Seccomp, err error) {
+func setupSeccomp(config *types.Seccomp, rs *specs.Spec) (newConfig *specs.Seccomp, err error) {
 	if config == nil {
 		return nil, nil
 	}
@@ -48,8 +49,37 @@ func setupSeccomp(config *types.Seccomp) (newConfig *specs.Seccomp, err error) {
 
 	newConfig.DefaultAction = specs.Action(config.DefaultAction)
 
+	var arch string
+	native, err := libseccomp.GetNativeArch()
+	if err == nil {
+		arch = native.String()
+	}
+
 	// Loop through all syscall blocks and convert them to libcontainer format
 	for _, call := range config.Syscalls {
+		var skip bool
+		var cap string
+		for _, a := range call.Includes.Arches {
+			if a == arch {
+				break
+			}
+			skip = true
+		}
+		if skip {
+			continue
+		}
+		skip = false
+		for _, c := range call.Includes.Caps {
+			for _, cap = range rs.Process.Capabilities {
+				if cap == c {
+					break
+				}
+			}
+			skip = true
+		}
+		if skip {
+			continue
+		}
 		newCall := specs.Syscall{
 			Name:   call.Name,
 			Action: specs.Action(call.Action),

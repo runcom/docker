@@ -1,5 +1,10 @@
 package types
 
+type SeccompFilter struct {
+	Arches []string `json:"arches,omitempty"`
+	Caps   []string `json:"caps,omitempty"`
+}
+
 // Seccomp represents the config for a seccomp profile for syscall restriction.
 type Seccomp struct {
 	DefaultAction Action     `json:"defaultAction"`
@@ -67,7 +72,9 @@ type Arg struct {
 
 // Syscall is used to match a syscall in Seccomp
 type Syscall struct {
-	Name   string `json:"name"`
-	Action Action `json:"action"`
-	Args   []*Arg `json:"args"`
+	Name     string        `json:"name"`
+	Action   Action        `json:"action"`
+	Args     []*Arg        `json:"args"`
+	Includes SeccompFilter `json:"includes,omitempty"`
+	Excludes SeccompFilter `json:"excludes,omitempty"`
 }
