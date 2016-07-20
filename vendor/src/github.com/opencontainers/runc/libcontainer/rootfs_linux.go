@@ -37,7 +37,7 @@ func setupRootfs(config *configs.Config, console *linuxConsole, pipe io.ReadWrit
 				return newSystemError(err)
 			}
 		}
-		if err := mountToRootfs(m, config.Rootfs, config.MountLabel); err != nil {
+		if err := mountToRootfs(m, config.Rootfs, config.MountLabel, config.Namespaces.Contains(configs.NEWUSER)); err != nil {
 			return newSystemError(err)
 		}
 
@@ -102,7 +102,7 @@ func mountCmd(cmd configs.Command) error {
 	return nil
 }
 
-func mountToRootfs(m *configs.Mount, rootfs, mountLabel string) error {
+func mountToRootfs(m *configs.Mount, rootfs, mountLabel string, userNsEnabled bool) error {
 	var (
 		dest = m.Destination
 	)
@@ -120,6 +120,9 @@ func mountToRootfs(m *configs.Mount, rootfs, mountLabel string) error {
 	case "mqueue":
 		if err := os.MkdirAll(dest, 0755); err != nil {
 			return err
+		}
+		if userNsEnabled {
+			return mountPropagate(m, rootfs, "")
 		}
 		if err := mountPropagate(m, rootfs, mountLabel); err != nil {
 			// older kernels do not support labeling of /dev/mqueue
@@ -217,11 +220,11 @@ func mountToRootfs(m *configs.Mount, rootfs, mountLabel string) error {
 			Data:             "mode=755",
 			PropagationFlags: m.PropagationFlags,
 		}
-		if err := mountToRootfs(tmpfs, rootfs, mountLabel); err != nil {
+		if err := mountToRootfs(tmpfs, rootfs, mountLabel, userNsEnabled); err != nil {
 			return err
 		}
 		for _, b := range binds {
-			if err := mountToRootfs(b, rootfs, mountLabel); err != nil {
+			if err := mountToRootfs(b, rootfs, mountLabel, userNsEnabled); err != nil {
 				return err
 			}
 		}
