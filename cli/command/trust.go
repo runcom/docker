@@ -10,12 +10,14 @@ import (
 var (
 	// TODO: make this not global
 	untrusted bool
+	trust     string
 )
 
 // AddTrustedFlags adds content trust flags to the current command flagset
 func AddTrustedFlags(fs *pflag.FlagSet, verify bool) {
 	trusted, message := setupTrustedFlag(verify)
 	fs.BoolVar(&untrusted, "disable-content-trust", !trusted, message)
+	fs.StringVar(&trust, "trust", "gpg", "trust method (notary|gpg)")
 }
 
 func setupTrustedFlag(verify bool) (bool, string) {
@@ -36,4 +38,8 @@ func setupTrustedFlag(verify bool) (bool, string) {
 // IsTrusted returns true if content trust is enabled
 func IsTrusted() bool {
 	return !untrusted
+}
+
+func TrustMethod() string {
+	return trust
 }

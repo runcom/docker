@@ -18,6 +18,9 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/containers/image/docker"
+	"github.com/containers/image/manifest"
+	"github.com/containers/image/signature"
 	"github.com/docker/distribution/digest"
 	"github.com/docker/distribution/registry/client/auth"
 	"github.com/docker/distribution/registry/client/transport"
@@ -233,54 +236,189 @@ func imagePushPrivileged(ctx context.Context, cli *command.DockerCli, authConfig
 
 // trustedPull handles content trust pulling of an image
 func trustedPull(ctx context.Context, cli *command.DockerCli, repoInfo *registry.RepositoryInfo, ref registry.Reference, authConfig types.AuthConfig, requestPrivilege types.RequestPrivilegeFunc) error {
+	trustMethod := command.TrustMethod()
 	var refs []target
-
-	notaryRepo, err := GetNotaryRepository(cli, repoInfo, authConfig, "pull")
-	if err != nil {
-		fmt.Fprintf(cli.Out(), "Error establishing connection to trust repository: %s\n", err)
-		return err
-	}
-
-	if ref.String() == "" {
-		// List all targets
-		targets, err := notaryRepo.ListTargets(releasesRole, data.CanonicalTargetsRole)
+	if trustMethod == "notary" {
+		notaryRepo, err := GetNotaryRepository(cli, repoInfo, authConfig, "pull")
 		if err != nil {
-			return notaryError(repoInfo.FullName(), err)
+			fmt.Fprintf(cli.Out(), "Error establishing connection to trust repository: %s\n", err)
+			return err
 		}
-		for _, tgt := range targets {
-			t, err := convertTarget(tgt.Target)
+
+		if ref.String() == "" {
+			// List all targets
+			targets, err := notaryRepo.ListTargets(releasesRole, data.CanonicalTargetsRole)
 			if err != nil {
-				fmt.Fprintf(cli.Out(), "Skipping target for %q\n", repoInfo.Name())
-				continue
+				return notaryError(repoInfo.FullName(), err)
 			}
-			// Only list tags in the top level targets role or the releases delegation role - ignore
-			// all other delegation roles
-			if tgt.Role != releasesRole && tgt.Role != data.CanonicalTargetsRole {
-				continue
+			for _, tgt := range targets {
+				t, err := convertTarget(tgt.Target)
+				if err != nil {
+					fmt.Fprintf(cli.Out(), "Skipping target for %q\n", repoInfo.Name())
+					continue
+				}
+				// Only list tags in the top level targets role or the releases delegation role - ignore
+				// all other delegation roles
+				if tgt.Role != releasesRole && tgt.Role != data.CanonicalTargetsRole {
+					continue
+				}
+				refs = append(refs, t)
 			}
-			refs = append(refs, t)
-		}
-		if len(refs) == 0 {
-			return notaryError(repoInfo.FullName(), fmt.Errorf("No trusted tags for %s", repoInfo.FullName()))
+			if len(refs) == 0 {
+				return notaryError(repoInfo.FullName(), fmt.Errorf("No trusted tags for %s", repoInfo.FullName()))
+			}
+		} else {
+			t, err := notaryRepo.GetTargetByName(ref.String(), releasesRole, data.CanonicalTargetsRole)
+			if err != nil {
+				return notaryError(repoInfo.FullName(), err)
+			}
+			// Only get the tag if it's in the top level targets role or the releases delegation role
+			// ignore it if it's in any other delegation roles
+			if t.Role != releasesRole && t.Role != data.CanonicalTargetsRole {
+				return notaryError(repoInfo.FullName(), fmt.Errorf("No trust data for %s", ref.String()))
+			}
+
+			logrus.Debugf("retrieving target for %s role\n", t.Role)
+			r, err := convertTarget(t.Target)
+			if err != nil {
+				return err
+
+			}
+			refs = append(refs, r)
 		}
 	} else {
-		t, err := notaryRepo.GetTargetByName(ref.String(), releasesRole, data.CanonicalTargetsRole)
-		if err != nil {
-			return notaryError(repoInfo.FullName(), err)
-		}
-		// Only get the tag if it's in the top level targets role or the releases delegation role
-		// ignore it if it's in any other delegation roles
-		if t.Role != releasesRole && t.Role != data.CanonicalTargetsRole {
-			return notaryError(repoInfo.FullName(), fmt.Errorf("No trust data for %s", ref.String()))
-		}
-
-		logrus.Debugf("retrieving target for %s role\n", t.Role)
-		r, err := convertTarget(t.Target)
+		defaultPolicy, err := signature.DefaultPolicy(nil)
 		if err != nil {
 			return err
-
 		}
-		refs = append(refs, r)
+		pc, err := signature.NewPolicyContext(defaultPolicy)
+		if err != nil {
+			return err
+		}
+		// pull -a
+		if ref.String() == "" {
+			// FIXME: this is an hack just to get the list of all tags...
+			// it's not mandatory that an image has a latest tag by default so
+			// this can really fail...
+			// instead, I believe there should be a simple way to get all tags
+			// for a given repository in containers/image just by querying the
+			// registry...
+			latestRef, err := reference.WithTag(repoInfo, "latest")
+			if err != nil {
+				return err
+			}
+			imgRef, err := docker.NewReference(latestRef)
+			if err != nil {
+				return err
+			}
+			img, err := imgRef.NewImage(nil)
+			if err != nil {
+				return err
+			}
+			dockerImg, ok := img.(*docker.Image)
+			if !ok {
+				return fmt.Errorf("image can't be converted to a Docker image")
+			}
+			fmt.Fprintf(cli.Out(), "Getting all tags for %s ...\n", repoInfo)
+			tags, err := dockerImg.GetRepositoryTags()
+			if err != nil {
+				return err
+			}
+			for i, tag := range tags {
+				t, err := reference.WithTag(repoInfo, tag)
+				if err != nil {
+					return err
+				}
+				fmt.Fprintf(cli.Out(), "(%d of %d): Checking signatures for %s: ", i+1, len(tags), t.String())
+				var checked bool
+				defer func() {
+					if err != nil || !checked {
+						fmt.Fprint(cli.Out(), "FAIL\n")
+					}
+				}()
+				imgRef, err := docker.NewReference(t)
+				if err != nil {
+					return err
+				}
+				img, err := imgRef.NewImage(nil)
+				if err != nil {
+					return err
+				}
+				allowed, err := pc.IsRunningImageAllowed(img)
+				if !allowed {
+					if err != nil {
+						return fmt.Errorf("%s isn't allowed: %v", t.String(), err)
+					}
+					// TODO(runcom): print a warning and continue here and in
+					// the other returns above and below
+					return fmt.Errorf("%s isn't allowed", t.String())
+				}
+				if err != nil {
+					return err
+				}
+				fmt.Fprint(cli.Out(), "OK\n")
+				checked = true
+				d, _, err := img.Manifest()
+				if err != nil {
+					return err
+				}
+				dgst, err := manifest.Digest(d)
+				if err != nil {
+					return err
+				}
+				refs = append(refs, target{
+					reference: registry.ParseReference(t.Tag()),
+					digest:    digest.Digest(dgst),
+				})
+			}
+		} else { // pull single image by tag or digest
+			// FIXME(runcom): this might actually be a digest also...
+			t, err := reference.WithTag(repoInfo, ref.String())
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(cli.Out(), "Checking signatures for %s: ", t.String())
+			var checked bool
+			defer func() {
+				if err != nil || !checked {
+					fmt.Fprint(cli.Out(), "FAIL\n")
+				}
+			}()
+			imgRef, err := docker.NewReference(t)
+			if err != nil {
+				return err
+			}
+			img, err := imgRef.NewImage(nil)
+			if err != nil {
+				return err
+			}
+			allowed, err := pc.IsRunningImageAllowed(img)
+			if !allowed {
+				if err != nil {
+					return fmt.Errorf("%s isn't allowed: %v", t.String(), err)
+				}
+				// TODO(runcom): print a warning and continue here and in
+				// the other returns above and below
+				return fmt.Errorf("%s isn't allowed", t.String())
+			}
+			if err != nil {
+				return err
+			}
+			fmt.Fprint(cli.Out(), "OK\n")
+			checked = true
+			d, _, err := img.Manifest()
+			if err != nil {
+				return err
+			}
+			dgst, err := manifest.Digest(d)
+			if err != nil {
+				return err
+			}
+			refs = append(refs, target{
+				reference: ref,
+				digest:    digest.Digest(dgst),
+			})
+		}
 	}
 
 	for i, r := range refs {

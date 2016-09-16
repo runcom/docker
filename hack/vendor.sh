@@ -69,6 +69,15 @@ clone git github.com/docker/go-connections 988efe982fdecb46f01d53465878ff1f2ff41
 clone git github.com/RackSec/srslog 365bf33cd9acc21ae1c355209865f17228ca534e
 clone git github.com/imdario/mergo 0.2.1
 
+# content trust == gpg
+clone git github.com/containers/image master
+clone git github.com/opencontainers/image-spec master
+clone git k8s.io/kubernetes 4a3f9c5b19c7ff804cbc1bf37a15c044ca5d2353 https://github.com/openshift/kubernetes
+clone git github.com/golang/glog 44145f04b68cf362d9c4df2182967c2275eaefed
+clone git github.com/ghodss/yaml 73d445a93680fa1a78ae23a5839bad48f32ba1ee
+clone git gopkg.in/yaml.v2 d466437aa4adc35830964cffc5b5f262c63ddcb4
+clone git github.com/mtrmac/gpgme master
+
 #get libnetwork packages
 clone git github.com/docker/libnetwork bf3d9ccfb8ebf768843691143c66d137743cc5e9
 clone git github.com/docker/go-events 18b43f1bc85d9cdd42c05a6cd2d444c7a200a894
