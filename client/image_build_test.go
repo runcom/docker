@@ -18,7 +18,7 @@ import (
 
 func TestImageBuildError(t *testing.T) {
 	client := &Client{
-		client: newMockClient(errorMock(http.StatusInternalServerError, "Server error")),
+		transport: newMockClient(nil, errorMock(http.StatusInternalServerError, "Server error")),
 	}
 	_, err := client.ImageBuild(context.Background(), nil, types.ImageBuildOptions{})
 	if err == nil || err.Error() != "Error response from daemon: Server error" {
@@ -157,7 +157,7 @@ func TestImageBuild(t *testing.T) {
 	for _, buildCase := range buildCases {
 		expectedURL := "/build"
 		client := &Client{
-			client: newMockClient(func(r *http.Request) (*http.Response, error) {
+			transport: newMockClient(nil, func(r *http.Request) (*http.Response, error) {
 				if !strings.HasPrefix(r.URL.Path, expectedURL) {
 					return nil, fmt.Errorf("Expected URL '%s', got '%s'", expectedURL, r.URL)
 				}

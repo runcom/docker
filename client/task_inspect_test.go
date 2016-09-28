@@ -15,7 +15,7 @@ import (
 
 func TestTaskInspectError(t *testing.T) {
 	client := &Client{
-		client: newMockClient(errorMock(http.StatusInternalServerError, "Server error")),
+		transport: newMockClient(nil, errorMock(http.StatusInternalServerError, "Server error")),
 	}
 
 	_, _, err := client.TaskInspectWithRaw(context.Background(), "nothing")
@@ -27,7 +27,7 @@ func TestTaskInspectError(t *testing.T) {
 func TestTaskInspect(t *testing.T) {
 	expectedURL := "/tasks/task_id"
 	client := &Client{
-		client: newMockClient(func(req *http.Request) (*http.Response, error) {
+		transport: newMockClient(nil, func(req *http.Request) (*http.Response, error) {
 			if !strings.HasPrefix(req.URL.Path, expectedURL) {
 				return nil, fmt.Errorf("Expected URL '%s', got '%s'", expectedURL, req.URL)
 			}

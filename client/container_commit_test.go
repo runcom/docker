@@ -15,7 +15,7 @@ import (
 
 func TestContainerCommitError(t *testing.T) {
 	client := &Client{
-		client: newMockClient(errorMock(http.StatusInternalServerError, "Server error")),
+		transport: newMockClient(nil, errorMock(http.StatusInternalServerError, "Server error")),
 	}
 	_, err := client.ContainerCommit(context.Background(), "nothing", types.ContainerCommitOptions{})
 	if err == nil || err.Error() != "Error response from daemon: Server error" {
@@ -34,7 +34,7 @@ func TestContainerCommit(t *testing.T) {
 	expectedChanges := []string{"change1", "change2"}
 
 	client := &Client{
-		client: newMockClient(func(req *http.Request) (*http.Response, error) {
+		transport: newMockClient(nil, func(req *http.Request) (*http.Response, error) {
 			if !strings.HasPrefix(req.URL.Path, expectedURL) {
 				return nil, fmt.Errorf("Expected URL '%s', got '%s'", expectedURL, req.URL)
 			}

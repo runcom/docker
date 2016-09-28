@@ -15,7 +15,7 @@ import (
 
 func TestNetworkCreateError(t *testing.T) {
 	client := &Client{
-		client: newMockClient(errorMock(http.StatusInternalServerError, "Server error")),
+		transport: newMockClient(nil, errorMock(http.StatusInternalServerError, "Server error")),
 	}
 
 	_, err := client.NetworkCreate(context.Background(), "mynetwork", types.NetworkCreate{})
@@ -28,7 +28,7 @@ func TestNetworkCreate(t *testing.T) {
 	expectedURL := "/networks/create"
 
 	client := &Client{
-		client: newMockClient(func(req *http.Request) (*http.Response, error) {
+		transport: newMockClient(nil, func(req *http.Request) (*http.Response, error) {
 			if !strings.HasPrefix(req.URL.Path, expectedURL) {
 				return nil, fmt.Errorf("Expected URL '%s', got '%s'", expectedURL, req.URL)
 			}
