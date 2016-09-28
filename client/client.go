@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/docker/go-connections/sockets"
+	"github.com/docker/docker/client/transport"
 	"github.com/docker/go-connections/tlsconfig"
 )
 
@@ -26,8 +26,8 @@ type Client struct {
 	addr string
 	// basePath holds the path to prepend to the requests.
 	basePath string
-	// client used to send and receive http requests.
-	client *http.Client
+	// transport is the interface to send request with, it implements transport.Client.
+	transport transport.Client
 	// version of the server to talk to.
 	version string
 	// custom http headers configured by users.
@@ -86,15 +86,9 @@ func NewClient(host string, version string, client *http.Client, httpHeaders map
 		return nil, err
 	}
 
-	if client == nil {
-		client = &http.Client{}
-	}
-
-	if client.Transport == nil {
-		// setup the transport, if not already present
-		transport := new(http.Transport)
-		sockets.ConfigureTransport(transport, proto, addr)
-		client.Transport = transport
+	transport, err := transport.NewTransportWithHTTP(proto, addr, client)
+	if err != nil {
+		return nil, err
 	}
 
 	return &Client{
@@ -102,7 +96,7 @@ func NewClient(host string, version string, client *http.Client, httpHeaders map
 		proto:             proto,
 		addr:              addr,
 		basePath:          basePath,
-		client:            client,
+		transport:         transport,
 		version:           version,
 		customHTTPHeaders: httpHeaders,
 	}, nil

@@ -17,7 +17,7 @@ import (
 
 func TestPluginInspectError(t *testing.T) {
 	client := &Client{
-		client: newMockClient(errorMock(http.StatusInternalServerError, "Server error")),
+		transport: newMockClient(nil, errorMock(http.StatusInternalServerError, "Server error")),
 	}
 
 	_, _, err := client.PluginInspectWithRaw(context.Background(), "nothing")
@@ -29,7 +29,7 @@ func TestPluginInspectError(t *testing.T) {
 func TestPluginInspect(t *testing.T) {
 	expectedURL := "/plugins/plugin_name"
 	client := &Client{
-		client: newMockClient(func(req *http.Request) (*http.Response, error) {
+		transport: newMockClient(nil, func(req *http.Request) (*http.Response, error) {
 			if !strings.HasPrefix(req.URL.Path, expectedURL) {
 				return nil, fmt.Errorf("Expected URL '%s', got '%s'", expectedURL, req.URL)
 			}

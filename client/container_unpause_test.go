@@ -13,7 +13,7 @@ import (
 
 func TestContainerUnpauseError(t *testing.T) {
 	client := &Client{
-		client: newMockClient(errorMock(http.StatusInternalServerError, "Server error")),
+		transport: newMockClient(nil, errorMock(http.StatusInternalServerError, "Server error")),
 	}
 	err := client.ContainerUnpause(context.Background(), "nothing")
 	if err == nil || err.Error() != "Error response from daemon: Server error" {
@@ -24,7 +24,7 @@ func TestContainerUnpauseError(t *testing.T) {
 func TestContainerUnpause(t *testing.T) {
 	expectedURL := "/containers/container_id/unpause"
 	client := &Client{
-		client: newMockClient(func(req *http.Request) (*http.Response, error) {
+		transport: newMockClient(nil, func(req *http.Request) (*http.Response, error) {
 			if !strings.HasPrefix(req.URL.Path, expectedURL) {
 				return nil, fmt.Errorf("Expected URL '%s', got '%s'", expectedURL, req.URL)
 			}

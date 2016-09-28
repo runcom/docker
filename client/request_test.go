@@ -50,7 +50,7 @@ func TestSetHostHeader(t *testing.T) {
 		}
 
 		client := &Client{
-			client: newMockClient(func(req *http.Request) (*http.Response, error) {
+			transport: newMockClient(nil, func(req *http.Request) (*http.Response, error) {
 				if !strings.HasPrefix(req.URL.Path, testURL) {
 					return nil, fmt.Errorf("Test Case #%d: Expected URL %q, got %q", c, testURL, req.URL)
 				}
@@ -65,7 +65,6 @@ func TestSetHostHeader(t *testing.T) {
 					Body:       ioutil.NopCloser(bytes.NewReader(([]byte("")))),
 				}, nil
 			}),
-
 			proto:    proto,
 			addr:     addr,
 			basePath: basePath,
@@ -83,7 +82,7 @@ func TestSetHostHeader(t *testing.T) {
 // errors returned as JSON
 func TestPlainTextError(t *testing.T) {
 	client := &Client{
-		client: newMockClient(plainTextErrorMock(http.StatusInternalServerError, "Server error")),
+		transport: newMockClient(nil, plainTextErrorMock(http.StatusInternalServerError, "Server error")),
 	}
 	_, err := client.ContainerList(context.Background(), types.ContainerListOptions{})
 	if err == nil || err.Error() != "Error response from daemon: Server error" {

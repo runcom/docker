@@ -16,7 +16,7 @@ import (
 
 func TestContainerUpdateError(t *testing.T) {
 	client := &Client{
-		client: newMockClient(errorMock(http.StatusInternalServerError, "Server error")),
+		transport: newMockClient(nil, errorMock(http.StatusInternalServerError, "Server error")),
 	}
 	_, err := client.ContainerUpdate(context.Background(), "nothing", container.UpdateConfig{})
 	if err == nil || err.Error() != "Error response from daemon: Server error" {
@@ -28,7 +28,7 @@ func TestContainerUpdate(t *testing.T) {
 	expectedURL := "/containers/container_id/update"
 
 	client := &Client{
-		client: newMockClient(func(req *http.Request) (*http.Response, error) {
+		transport: newMockClient(nil, func(req *http.Request) (*http.Response, error) {
 			if !strings.HasPrefix(req.URL.Path, expectedURL) {
 				return nil, fmt.Errorf("Expected URL '%s', got '%s'", expectedURL, req.URL)
 			}

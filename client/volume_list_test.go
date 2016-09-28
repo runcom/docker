@@ -16,7 +16,7 @@ import (
 
 func TestVolumeListError(t *testing.T) {
 	client := &Client{
-		client: newMockClient(errorMock(http.StatusInternalServerError, "Server error")),
+		transport: newMockClient(nil, errorMock(http.StatusInternalServerError, "Server error")),
 	}
 
 	_, err := client.VolumeList(context.Background(), filters.NewArgs())
@@ -59,7 +59,7 @@ func TestVolumeList(t *testing.T) {
 
 	for _, listCase := range listCases {
 		client := &Client{
-			client: newMockClient(func(req *http.Request) (*http.Response, error) {
+			transport: newMockClient(nil, func(req *http.Request) (*http.Response, error) {
 				if !strings.HasPrefix(req.URL.Path, expectedURL) {
 					return nil, fmt.Errorf("Expected URL '%s', got '%s'", expectedURL, req.URL)
 				}
