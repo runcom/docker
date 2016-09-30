@@ -11,6 +11,10 @@ import (
 	"runtime"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/containers/image/docker"
+	"github.com/containers/image/manifest"
+	"github.com/containers/image/signature"
+	"github.com/containers/image/types"
 	"github.com/docker/distribution"
 	"github.com/docker/distribution/digest"
 	"github.com/docker/distribution/manifest/manifestlist"
@@ -58,6 +62,9 @@ type v2Puller struct {
 	// confirmedV2 is set to true if we confirm we're talking to a v2
 	// registry. This is used to limit fallbacks to the v1 protocol.
 	confirmedV2 bool
+
+	policyContext *signature.PolicyContext
+	originalRef   reference.Named
 }
 
 func (p *v2Puller) Pull(ctx context.Context, ref reference.Named) (err error) {
@@ -89,9 +96,51 @@ func (p *v2Puller) Pull(ctx context.Context, ref reference.Named) (err error) {
 	return err
 }
 
+func (p *v2Puller) checkTrusted(ref reference.Named) (reference.Named, error) {
+	p.originalRef = ref
+	imgRef, err := docker.NewReference(ref)
+	if err != nil {
+		return nil, err
+	}
+	isSecure := (p.endpoint.TLSConfig == nil || !p.endpoint.TLSConfig.InsecureSkipVerify)
+	ctx := &types.SystemContext{DockerInsecureSkipTLSVerify: !isSecure}
+	img, err := imgRef.NewImage(ctx)
+	if err != nil {
+		return nil, err
+	}
+	allowed, err := p.policyContext.IsRunningImageAllowed(img)
+	if !allowed {
+		if err != nil {
+			return nil, fmt.Errorf("%s isn't allowed: %v", ref.String(), err)
+		}
+		return nil, fmt.Errorf("%s isn't allowed", ref.String())
+	}
+	if err != nil {
+		return nil, err
+	}
+	d, _, err := img.Manifest()
+	if err != nil {
+		return nil, err
+	}
+	dgst, err := manifest.Digest(d)
+	if err != nil {
+		return nil, err
+	}
+	ref, err = reference.WithDigest(ref, digest.Digest(dgst))
+	if err != nil {
+		return nil, err
+	}
+	return ref, nil
+}
+
 func (p *v2Puller) pullV2Repository(ctx context.Context, ref reference.Named) (err error) {
 	var layersDownloaded bool
 	if !reference.IsNameOnly(ref) {
+		var err error
+		ref, err = p.checkTrusted(ref)
+		if err != nil {
+			return err
+		}
 		layersDownloaded, err = p.pullV2Tag(ctx, ref)
 		if err != nil {
 			return err
@@ -114,7 +163,13 @@ func (p *v2Puller) pullV2Repository(ctx context.Context, ref reference.Named) (e
 			if err != nil {
 				return err
 			}
-			pulledNew, err := p.pullV2Tag(ctx, tagRef)
+			trustedRef, err := p.checkTrusted(tagRef)
+			if err != nil {
+				progress.Message(p.config.ProgressOutput, "", err.Error())
+				p.originalRef = nil
+				continue
+			}
+			pulledNew, err := p.pullV2Tag(ctx, trustedRef)
 			if err != nil {
 				// Since this is the pull-all-tags case, don't
 				// allow an error pulling a particular tag to
@@ -130,7 +185,9 @@ func (p *v2Puller) pullV2Repository(ctx context.Context, ref reference.Named) (e
 		}
 	}
 
-	writeStatus(ref.String(), p.config.ProgressOutput, layersDownloaded)
+	if p.originalRef != nil {
+		writeStatus(ref.String(), p.config.ProgressOutput, layersDownloaded)
+	}
 
 	return nil
 }
@@ -408,6 +465,9 @@ func (p *v2Puller) pullV2Tag(ctx context.Context, ref reference.Named) (tagUpdat
 	oldTagID, err := p.config.ReferenceStore.Get(ref)
 	if err == nil {
 		if oldTagID == id {
+			if err := p.addTrustedTag(id); err != nil {
+				return false, err
+			}
 			return false, addDigestReference(p.config.ReferenceStore, ref, manifestDigest, id)
 		}
 	} else if err != reference.ErrDoesNotExist {
@@ -416,6 +476,9 @@ func (p *v2Puller) pullV2Tag(ctx context.Context, ref reference.Named) (tagUpdat
 
 	if canonical, ok := ref.(reference.Canonical); ok {
 		if err = p.config.ReferenceStore.AddDigest(canonical, id, true); err != nil {
+			return false, err
+		}
+		if err := p.addTrustedTag(id); err != nil {
 			return false, err
 		}
 	} else {
@@ -427,6 +490,17 @@ func (p *v2Puller) pullV2Tag(ctx context.Context, ref reference.Named) (tagUpdat
 		}
 	}
 	return true, nil
+}
+
+func (p *v2Puller) addTrustedTag(id digest.Digest) error {
+	if p.policyContext != nil {
+		if _, ok := p.originalRef.(reference.Canonical); !ok {
+			if err := p.config.ReferenceStore.AddTag(p.originalRef, id, true); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (p *v2Puller) pullSchema1(ctx context.Context, ref reference.Named, unverifiedManifest *schema1.SignedManifest) (id digest.Digest, manifestDigest digest.Digest, err error) {

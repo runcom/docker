@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/containers/image/signature"
 	"github.com/docker/distribution"
 	"github.com/docker/distribution/context"
 	"github.com/docker/distribution/manifest/schema2"
@@ -46,4 +47,8 @@ func (ld *v2LayerDescriptor) open(ctx context.Context) (distribution.ReadSeekClo
 		rsc = nil
 	}
 	return rsc, err
+}
+
+func configurePolicyContext() (*signature.PolicyContext, error) {
+	return nil, nil
 }
