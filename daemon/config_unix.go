@@ -39,6 +39,7 @@ type Config struct {
 	SeccompProfile       string                   `json:"seccomp-profile,omitempty"`
 	ShmSize              opts.MemBytes            `json:"default-shm-size,omitempty"`
 	EnableSecrets        bool                     `json:"enable-secrets"`
+	SigCheck             bool                     `json:"signature-verification"`
 }
 
 // bridgeConfig stores all the bridge driver specific
@@ -97,6 +98,7 @@ func (config *Config) InstallFlags(flags *pflag.FlagSet) {
 	flags.StringVar(&config.SeccompProfile, "seccomp-profile", "", "Path to seccomp profile")
 	flags.Var(&config.ShmSize, "default-shm-size", "Default shm size for containers")
 	flags.BoolVar(&config.EnableSecrets, "enable-secrets", true, "Enable Secrets")
+	flags.BoolVar(&config.SigCheck, "signature-verification", true, "Check image's signatures on pull")
 
 	config.attachExperimentalFlags(flags)
 }
