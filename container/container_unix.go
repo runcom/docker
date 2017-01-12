@@ -30,13 +30,14 @@ type Container struct {
 	CommonContainer
 
 	// Fields below here are platform specific.
-	AppArmorProfile string
-	HostnamePath    string
-	HostsPath       string
-	ShmPath         string
-	ResolvConfPath  string
-	SeccompProfile  string
-	NoNewPrivileges bool
+	AppArmorProfile   string
+	HostnamePath      string
+	HostsPath         string
+	ShmPath           string
+	SystemdCgroupPath string
+	ResolvConfPath    string
+	SeccompProfile    string
+	NoNewPrivileges   bool
 }
 
 // ExitStatus provides exit reasons for a container.
@@ -210,6 +211,10 @@ func (container *Container) ShmResourcePath() (string, error) {
 	return container.GetRootResourcePath("shm")
 }
 
+func (container *Container) SystemdCgroupResourcePath() (string, error) {
+	return container.GetRootResourcePath("systemd-cgroup")
+}
+
 // HasMountFor checks if path is a mountpoint
 func (container *Container) HasMountFor(path string) bool {
 	_, exists := container.MountPoints[path]
@@ -242,6 +247,32 @@ func (container *Container) UnmountIpcMounts(unmount func(pth string) error) {
 	}
 }
 
+func (container *Container) UnmountSystemdCgroup(unmount func(pth string) error) {
+	var warnings []string
+
+	//if !container.HasMountFor("/dev/shm") {
+	systemdCgroupPath, err := container.SystemdCgroupResourcePath()
+	if err != nil {
+		logrus.Error(err)
+		warnings = append(warnings, err.Error())
+	} else if systemdCgroupPath != "" {
+		// first call umount cgroup
+		if err := unmount(systemdCgroupPath); err != nil && !os.IsNotExist(err) {
+			warnings = append(warnings, fmt.Sprintf("failed to umount %s: %v", systemdCgroupPath, err))
+		}
+		// second call umount tmpfs parent
+		if err := unmount(systemdCgroupPath); err != nil && !os.IsNotExist(err) {
+			warnings = append(warnings, fmt.Sprintf("failed to umount %s: %v", systemdCgroupPath, err))
+		}
+
+	}
+	//}
+
+	if len(warnings) > 0 {
+		logrus.Warnf("failed to cleanup systemd cgroup mounts:\n%v", strings.Join(warnings, "\n"))
+	}
+}
+
 // IpcMounts returns the list of IPC mounts
 func (container *Container) IpcMounts() []Mount {
 	var mounts []Mount
@@ -255,6 +286,24 @@ func (container *Container) IpcMounts() []Mount {
 			Propagation: volume.DefaultPropagationMode,
 		})
 	}
+
+	return mounts
+}
+
+// SystemdCgroup returns systemd cgroup rw mount
+func (container *Container) SystemdCgroup() []Mount {
+	var mounts []Mount
+
+	// TODO(runcom): should be "basename("/sbin/init")"
+	//if container.Config.Cmd[0] == "/sbin/init" || container.Config.Cmd[0] == "systemd" || strings.Contains(container.Config.Cmd[0], "init") {
+	label.SetFileLabel(container.SystemdCgroupPath, container.MountLabel)
+	mounts = append(mounts, Mount{
+		Source:      container.SystemdCgroupPath,
+		Destination: "/sys/fs/cgroup/systemd",
+		Writable:    true,
+		Propagation: volume.DefaultPropagationMode,
+	})
+	//}
 
 	return mounts
 }

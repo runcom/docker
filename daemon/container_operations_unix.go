@@ -184,6 +184,36 @@ func (daemon *Daemon) getPidContainer(container *container.Container) (*containe
 	return c, nil
 }
 
+func (daemon *Daemon) setupSystemdCgroup(c *container.Container) error {
+	// TODO(runcom): should be "basename("/sbin/init")"
+	//if c.Config.Cmd[0] == "/sbin/init" || c.Config.Cmd[0] == "systemd" || strings.Contains(c.Config.Cmd[0], "init") {
+	// if !c.HasMountFor("/sys/fs/cgroup/systemd")
+	systemdCgroupPath, err := c.GetRootResourcePath("systemd-cgroup")
+	if err != nil {
+		return nil
+	}
+	c.SystemdCgroupPath = systemdCgroupPath
+	rootUID, rootGID := daemon.GetRemappedUIDGID()
+	if err := idtools.MkdirAllAs(systemdCgroupPath, 0700, rootUID, rootGID); err != nil {
+		return err
+	}
+
+	if err := syscall.Mount("tmpfs", systemdCgroupPath, "tmpfs", uintptr(syscall.MS_NOEXEC|syscall.MS_NOSUID|syscall.MS_NODEV), label.FormatMountLabel("", c.GetMountLabel())); err != nil {
+		return fmt.Errorf("mounting systemd cgroup tmpfs failed: %v", err)
+	}
+
+	props := "xattr,release_agent=/usr/lib/systemd/systemd-cgroups-agent,name=systemd"
+	if err := syscall.Mount("cgroup", systemdCgroupPath, "cgroup", uintptr(syscall.MS_NOEXEC|syscall.MS_NOSUID|syscall.MS_NODEV), label.FormatMountLabel(props, c.GetMountLabel())); err != nil {
+		return err
+	}
+
+	if err := os.Chown(systemdCgroupPath, rootUID, rootGID); err != nil {
+		return err
+	}
+	//}
+	return nil
+}
+
 func (daemon *Daemon) setupIpcDirs(c *container.Container) error {
 	var err error
 

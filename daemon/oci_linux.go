@@ -563,9 +563,11 @@ func setMounts(daemon *Daemon, s *specs.Spec, c *container.Container, mounts []c
 		s.Linux.MaskedPaths = nil
 	}
 
+	// TODO(runcom): this can be removed if Fedora/RHEL can deal with RO mounts in userns
 	// TODO: until a kernel/mount solution exists for handling remount in a user namespace,
 	// we must clear the readonly flag for the cgroups mount (@mrunalp concurs)
 	if uidMap, _ := daemon.GetUIDGIDMaps(); uidMap != nil || c.HostConfig.Privileged {
+		//if c.HostConfig.Privileged {
 		for i, m := range s.Mounts {
 			if m.Type == "cgroup" {
 				clearReadOnly(&s.Mounts[i])
@@ -658,10 +660,15 @@ func (daemon *Daemon) createSpec(c *container.Container) (*libcontainerd.Spec, e
 		return nil, err
 	}
 
+	if err := daemon.setupSystemdCgroup(c); err != nil {
+		return nil, err
+	}
+
 	ms, err := daemon.setupMounts(c)
 	if err != nil {
 		return nil, err
 	}
+	ms = append(ms, c.SystemdCgroup()...)
 	ms = append(ms, c.IpcMounts()...)
 	ms = append(ms, c.TmpfsMounts()...)
 	rootUID, rootGID := daemon.GetRemappedUIDGID()

@@ -174,6 +174,7 @@ func (daemon *Daemon) Cleanup(container *container.Container) {
 	daemon.releaseNetwork(container)
 
 	container.UnmountIpcMounts(detachMounted)
+	container.UnmountSystemdCgroup(detachMounted)
 
 	if err := daemon.conditionalUnmountOnCleanup(container); err != nil {
 		// FIXME: remove once reference counting for graphdrivers has been refactored
