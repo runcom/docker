@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/containers/image/docker/reference"
-	"github.com/containers/image/transports"
+	"github.com/containers/image/registeredtransports"
 	"github.com/containers/image/types"
 )
 
@@ -15,7 +15,7 @@ func parseImageAndDockerReference(image types.UnparsedImage, s2 string) (referen
 	r1 := image.Reference().DockerReference()
 	if r1 == nil {
 		return nil, nil, PolicyRequirementError(fmt.Sprintf("Docker reference match attempted on image %s with no known Docker reference identity",
-			transports.ImageName(image.Reference())))
+			registeredtransports.ImageName(image.Reference())))
 	}
 	r2, err := reference.ParseNamed(s2)
 	if err != nil {

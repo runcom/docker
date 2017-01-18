@@ -5,7 +5,7 @@ package signature
 import (
 	"fmt"
 
-	"github.com/containers/image/transports"
+	"github.com/containers/image/registeredtransports"
 	"github.com/containers/image/types"
 )
 
@@ -20,9 +20,9 @@ func (pr *prInsecureAcceptAnything) isRunningImageAllowed(image types.UnparsedIm
 }
 
 func (pr *prReject) isSignatureAuthorAccepted(image types.UnparsedImage, sig []byte) (signatureAcceptanceResult, *Signature, error) {
-	return sarRejected, nil, PolicyRequirementError(fmt.Sprintf("Any signatures for image %s are rejected by policy.", transports.ImageName(image.Reference())))
+	return sarRejected, nil, PolicyRequirementError(fmt.Sprintf("Any signatures for image %s are rejected by policy.", registeredtransports.ImageName(image.Reference())))
 }
 
 func (pr *prReject) isRunningImageAllowed(image types.UnparsedImage) (bool, error) {
-	return false, PolicyRequirementError(fmt.Sprintf("Running image %s is rejected by policy.", transports.ImageName(image.Reference())))
+	return false, PolicyRequirementError(fmt.Sprintf("Running image %s is rejected by policy.", registeredtransports.ImageName(image.Reference())))
 }

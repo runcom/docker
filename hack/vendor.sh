@@ -168,12 +168,15 @@ clone git github.com/inconshreveable/mousetrap 76626ae9c91c4f2a10f34cad8ce83ea42
 clone git github.com/flynn-archive/go-shlex 3f9db97f856818214da2e1057f8ad84803971cff
 
 # signatures
-clone git github.com/containers/image bad049ae43b296d84e83b204d27f7df8751b460d
+clone git github.com/containers/image pluggable-transports https://github.com/runcom/image
+clone git github.com/containers/storage master
 clone git github.com/opencontainers/image-spec 756744a5dcf23a6c8e4b11ef403522ca3ca33fd9
 clone git k8s.io/kubernetes 4a3f9c5b19c7ff804cbc1bf37a15c044ca5d2353 https://github.com/openshift/kubernetes
 clone git github.com/golang/glog 44145f04b68cf362d9c4df2182967c2275eaefed
 clone git github.com/ghodss/yaml 73d445a93680fa1a78ae23a5839bad48f32ba1ee
 clone git gopkg.in/yaml.v2 d466437aa4adc35830964cffc5b5f262c63ddcb4
 clone git github.com/mtrmac/gpgme master
+
+clone git github.com/opencontainers/go-digest master
 
 clean

@@ -15,13 +15,14 @@ package signature
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/pkg/errors"
+
 	"github.com/containers/image/docker/reference"
-	"github.com/containers/image/transports"
+	"github.com/containers/image/registeredtransports"
 	"github.com/containers/image/types"
 )
 
@@ -40,8 +41,6 @@ type InvalidPolicyFormatError string
 func (err InvalidPolicyFormatError) Error() string {
 	return string(err)
 }
-
-// FIXME: NewDefaultPolicy, from default file (or environment if trusted?)
 
 // DefaultPolicy returns the default policy of the system.
 // Most applications should be using this method to get the policy configured
@@ -124,7 +123,7 @@ func (m *policyTransportsMap) UnmarshalJSON(data []byte) error {
 	// So, use a temporary map of pointers-to-slices and convert.
 	tmpMap := map[string]*PolicyTransportScopes{}
 	if err := paranoidUnmarshalJSONObject(data, func(key string) interface{} {
-		transport, ok := transports.KnownTransports[key]
+		transport, ok := registeredtransports.KnownTransports[key]
 		if !ok {
 			return nil
 		}
@@ -407,7 +406,7 @@ func (pr *prSignedBy) UnmarshalJSON(data []byte) error {
 	case !gotKeyPath && !gotKeyData:
 		return InvalidPolicyFormatError("At least one of keyPath and keyData mus be specified")
 	default: // Coverage: This should never happen
-		return fmt.Errorf("Impossible keyPath/keyData presence combination!?")
+		return errors.Errorf("Impossible keyPath/keyData presence combination!?")
 	}
 	if err != nil {
 		return err
